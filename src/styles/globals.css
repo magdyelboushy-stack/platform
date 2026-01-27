@@ -1,0 +1,166 @@
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&family=Alexandria:wght@400;500;600;700;800;900&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Base Colors - Luxe Light Theme */
+    --bg-main: #f9f6f2;
+    /* Pure Champagne Bone */
+    --bg-secondary: #ffffff;
+    --bg-card: #ffffff;
+    --text-primary: #12100e;
+    /* Intense Espresso */
+    --text-secondary: #3d352e;
+    /* Rich Earth Brown */
+    --border-color: rgba(197, 160, 89, 0.15);
+    /* Elegant Gold Tint */
+
+    /* DEFINITIVE BRAND PALETTE - EDIT HERE TO CHANGE SITEWIDE */
+    --brand-primary: #C5A059;
+    /* Luxe Gold */
+    --brand-secondary: #8E6C3D;
+    /* Noble Dark Gold */
+    --brand-dark: #5e482b;
+    /* Deep Bronze */
+    --brand-accent: #E2B659;
+    /* Warm Amber */
+
+    /* Legacy Alias for backward compatibility */
+    --color-brand: var(--brand-primary);
+
+    --dark-main: #0c0c0c;
+    /* Deepest Black */
+    --dark-panel: #1a1a1a;
+    /* Soft Panel Black */
+    --dark-border: rgba(197, 160, 89, 0.1);
+
+    --glass-bg: rgba(255, 255, 255, 0.6);
+    --glass-border: rgba(197, 160, 89, 0.2);
+    --lamp-glow: 0 0 30px rgba(197, 160, 89, 0.3);
+    --ios-shadow: 0 8px 32px 0 rgba(26, 22, 20, 0.08);
+  }
+
+  /* Dark Mode Overrides - Warm Deep Aesthetic */
+  .dark {
+    --bg-main: var(--dark-main);
+    --bg-secondary: var(--dark-panel);
+    --bg-card: #222222;
+    --text-primary: #fdfbf7;
+    --text-secondary: #a8a29e;
+    --border-color: var(--dark-border);
+
+    --glass-bg: rgba(20, 18, 16, 0.7);
+    --glass-border: rgba(197, 160, 89, 0.15);
+    --lamp-glow: 0 0 40px rgba(197, 160, 89, 0.2);
+    --ios-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.6);
+  }
+
+  * {
+    border-color: var(--border-color);
+  }
+
+  html {
+    @apply scroll-smooth antialiased;
+  }
+
+  body {
+    @apply transition-colors duration-300;
+    background-color: var(--bg-main);
+    color: var(--text-primary);
+    font-family: 'Cairo', sans-serif;
+  }
+
+  /* GLOBAL SELECTION COLOR Override (Was Blue) */
+  ::selection {
+    background-color: var(--brand-primary);
+    color: #ffffff;
+  }
+
+  /* AUTOFILL COLOR Override (Was Blue) */
+  input:-webkit-autofill,
+  input:-webkit-autofill:hover,
+  input:-webkit-autofill:focus,
+  input:-webkit-autofill:active {
+    -webkit-box-shadow: 0 0 0 30px var(--bg-card) inset !important;
+    -webkit-text-fill-color: var(--text-primary) !important;
+    caret-color: var(--text-primary);
+    transition: background-color 5000s ease-in-out 0s;
+    border-color: var(--brand-primary) !important;
+  }
+
+  /* Force Remove Blue Outline on Focus */
+  input:focus,
+  textarea:focus,
+  select:focus {
+    outline: none !important;
+    border-color: var(--brand-primary) !important;
+    box-shadow: 0 0 0 4px rgba(197, 160, 89, 0.15) !important;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    @apply font-display;
+    color: var(--text-primary);
+  }
+
+  /* Custom Scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background-color: var(--bg-main);
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-slate-400 dark:bg-slate-700 rounded-full hover:bg-slate-500 dark:hover:bg-slate-600;
+  }
+}
+
+@layer utilities {
+  .font-display {
+    font-family: 'Alexandria', sans-serif;
+  }
+
+  .font-body {
+    font-family: 'Cairo', sans-serif;
+  }
+
+  .glass-card {
+    @apply backdrop-blur-[24px] border transition-all;
+    background-color: var(--glass-bg);
+    border-color: var(--glass-border);
+    box-shadow: var(--ios-shadow);
+  }
+
+  .text-brand {
+    color: var(--color-brand);
+  }
+
+  .bg-brand {
+    background-color: var(--color-brand);
+  }
+
+  .shadow-lamp {
+    box-shadow: var(--lamp-glow);
+  }
+
+  .scale-animation {
+    @apply transition-all duration-500;
+  }
+
+  .scale-animation:hover {
+    @apply scale-105;
+  }
+
+  .scale-animation:active {
+    @apply scale-95;
+  }
+}

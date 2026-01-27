@@ -1,0 +1,19 @@
+{
+  "status": "commited",
+  "type": "backend",
+  "scope": "codebase",
+  "localEndpoint": "http://localhost:8000",
+  "backendAuthType": "basic token",
+  "backendUsername": "magdymohamed1929@gmail.com",
+  "backendPassword": "Magdy@2010",
+  "executionArgs": {
+    "projectName": "frontend",
+    "projectPath": "c:\\laragon\\www\\frontend",
+    "testIds": [],
+    "additionalInstruction": "CSRF endpoint is now fixed and verified on port 8000. Proceed with auth and security tests.",
+    "envs": {
+      "API_KEY": "sk-user-kIBJej6zkL-clWyyLJR_wVFjgZZoZk5O20APGsdLwPUeF1IMc_fW1k-rwDf4CseLlv9TufEXB6lxsuilUTjCXJ0DGNwNRCeS67BCgdWi_MFWjx_WzBT2eySskQ6Cgz0LYl0"
+    }
+  },
+  "proxy": "http://d946dba7-e39b-4c9f-98b1-049ee3dc0fa4:4ukFCBVIvJvtkIjr8epuyC1RDz5u5QXe@tun.testsprite.com:8080"
+}

@@ -1,0 +1,27 @@
+# Block directory listing
+Options -Indexes
+
+# Prevent script execution
+<FilesMatch "\.(php|php3|php4|php5|phtml|pl|py|jsp|asp|aspx|sh|cgi|exe)$">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+# Allow only specific types
+<FilesMatch "\.(jpg|jpeg|png|gif|pdf)$">
+    Order allow,deny
+    Allow from all
+</FilesMatch>
+
+# Block hidden files
+<FilesMatch "^\.">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+# Headers
+<IfModule mod_headers.c>
+    Header set X-Content-Type-Options "nosniff"
+    Header set Content-Security-Policy "default-src 'none'; style-src 'unsafe-inline'"
+    Header set X-Frame-Options "DENY"
+</IfModule>

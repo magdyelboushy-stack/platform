@@ -1,0 +1,60 @@
+// ============================================================
+// Core Types - Updated
+// ============================================================
+
+export type UserRole = 'student' | 'parent' | 'teacher' | 'support' | 'admin' | 'assistant';
+
+export interface User {
+    id: string;
+    email: string;
+    name: string;
+    avatar?: string;
+    role: UserRole;
+    status: 'pending' | 'active' | 'blocked';
+    bio?: string;
+    grade_level?: string | number;
+    education_stage?: string;
+    phone?: string;
+    parent_phone?: string;
+    governorate?: string;
+    city?: string;
+    createdAt?: string;
+}
+
+export interface AuthTokens {
+    accessToken?: string;
+    token?: string;
+    refreshToken?: string;
+    expiresIn?: number;
+}
+
+export interface ApiError {
+    message: string;
+    errors?: Record<string, string[]>;
+    code?: string;
+}
+
+export interface Teacher extends User {
+    subject: string;
+    rating: number;
+    studentsCount: number;
+    coursesCount: number;
+    description: string;
+}
+
+export interface Course {
+    id: string;
+    title: string;
+    description: string;
+    thumbnail: string;
+    instructor: {
+        id: string;
+        name: string;
+        avatar?: string;
+    };
+    price: number;
+    rating: number;
+    studentsCount: number;
+    lessonsCount: number;
+    duration: number; // minutes
+}

@@ -1,0 +1,167 @@
+{
+  "tech_stack": [
+    "PHP",
+    "Vite",
+    "React",
+    "TypeScript",
+    "MySQL"
+  ],
+  "features": [
+    {
+      "name": "CSRF Token",
+      "description": "Endpoint to get a fresh CSRF token for security.",
+      "files": [
+        "backend/app/Controllers/Security/CSRFController.php",
+        "backend/app/Config/routes.php"
+      ],
+      "api_doc": {
+        "openapi": "3.0.0",
+        "info": {
+          "title": "CSRF API",
+          "version": "1.0.0"
+        },
+        "paths": {
+          "/api/csrf-token": {
+            "get": {
+              "responses": {
+                "200": {
+                  "description": "Returns a CSRF token",
+                  "content": {
+                    "application/json": {
+                      "schema": {
+                        "type": "object",
+                        "properties": {
+                          "csrf_token": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          },
+                          "session_id": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Auth Login",
+      "description": "Endpoint for user login.",
+      "files": [
+        "backend/app/Controllers/Auth/Login.php",
+        "backend/app/Config/routes.php"
+      ],
+      "api_doc": {
+        "openapi": "3.0.0",
+        "info": {
+          "title": "Auth Login API",
+          "version": "1.0.0"
+        },
+        "paths": {
+          "/api/auth/login": {
+            "post": {
+              "requestBody": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "type": "object",
+                      "properties": {
+                        "email": {
+                          "type": "string"
+                        },
+                        "password": {
+                          "type": "string"
+                        },
+                        "csrf_token": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "email",
+                        "password",
+                        "csrf_token"
+                      ]
+                    }
+                  }
+                }
+              },
+              "responses": {
+                "200": {
+                  "description": "Login success"
+                },
+                "401": {
+                  "description": "Unauthorized"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Auth Register",
+      "description": "Endpoint for user registration.",
+      "files": [
+        "backend/app/Controllers/Auth/Register.php",
+        "backend/app/Config/routes.php"
+      ],
+      "api_doc": {
+        "openapi": "3.0.0",
+        "info": {
+          "title": "Auth Register API",
+          "version": "1.0.0"
+        },
+        "paths": {
+          "/api/auth/register": {
+            "post": {
+              "requestBody": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "type": "object",
+                      "properties": {
+                        "name": {
+                          "type": "string"
+                        },
+                        "email": {
+                          "type": "string"
+                        },
+                        "password": {
+                          "type": "string"
+                        },
+                        "csrf_token": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "name",
+                        "email",
+                        "password",
+                        "csrf_token"
+                      ]
+                    }
+                  }
+                }
+              },
+              "responses": {
+                "201": {
+                  "description": "User created"
+                },
+                "400": {
+                  "description": "Bad Request"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}
