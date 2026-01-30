@@ -6,7 +6,7 @@ import {
 } from 'lucide-react';
 import { QRCodeCanvas } from 'qrcode.react';
 import { useAuthStore } from '@/store/authStore';
-import { apiClient } from '@/core/api/client';
+import { getImageUrl } from '@/core/utils/url';
 
 // مكون فرعي لكل خلية في الـ Bento Grid
 function BentoBox({ children, className = "" }: { children: React.ReactNode, className?: string }) {
@@ -19,7 +19,6 @@ function BentoBox({ children, className = "" }: { children: React.ReactNode, cla
 
 export function StudentIdentityCard() {
     const user = useAuthStore(state => state.user);
-    const [blobSrc, setBlobSrc] = useState<string | null>(null);
     const highResQrRef = useRef<HTMLCanvasElement>(null);
 
     const downloadQRCode = () => {
@@ -50,16 +49,7 @@ export function StudentIdentityCard() {
         return `الصف ${gradeName} ${stageName}`;
     };
 
-    const avatarPath = user?.avatar ? (user.avatar.startsWith('http') ? null : `avatars/${user.avatar.split(/[\\/]/).pop()}`) : null;
-
-    useEffect(() => {
-        if (!avatarPath) { setBlobSrc(null); return; }
-        let cancelled = false;
-        apiClient.get(avatarPath, { responseType: 'blob' })
-            .then((res) => { if (!cancelled) setBlobSrc(URL.createObjectURL(res.data as Blob)); })
-            .catch(() => { if (!cancelled) setBlobSrc(null); });
-        return () => { cancelled = true; };
-    }, [avatarPath]);
+    const avatarUrl = getImageUrl(user?.avatar);
 
     const student = {
         name: user?.name || "طالب متميز",
@@ -102,8 +92,8 @@ export function StudentIdentityCard() {
                         <div className="relative group/avatar">
                             <div className="w-32 h-32 sm:w-40 sm:h-40 md:w-52 md:h-52 rounded-[2.5rem] sm:rounded-[3.2rem] p-2 bg-[var(--bg-secondary)] shadow-2xl border border-[var(--border-color)] relative z-10 transition-all duration-700 group-hover/avatar:scale-[1.05] group-hover/avatar:rotate-2 group-hover/avatar:shadow-brand-500/20">
                                 <div className="w-full h-full rounded-[2.2rem] sm:rounded-[2.8rem] overflow-hidden bg-slate-50 dark:bg-white/[0.03] flex items-center justify-center relative">
-                                    {blobSrc ? (
-                                        <img src={blobSrc} className="w-full h-full object-cover transition-all duration-1000 group-hover/avatar:scale-115" alt={student.name} />
+                                    {avatarUrl ? (
+                                        <img src={avatarUrl} className="w-full h-full object-cover transition-all duration-1000 group-hover/avatar:scale-115" alt={student.name} />
                                     ) : (
                                         <div className="flex flex-col items-center opacity-30 dark:opacity-10 text-slate-400 font-display">
                                             <GraduationCap className="w-10 h-10 sm:w-14 sm:h-14" />

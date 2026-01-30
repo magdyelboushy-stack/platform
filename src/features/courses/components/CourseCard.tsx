@@ -1,8 +1,12 @@
 import { motion } from 'framer-motion';
 import { Star, BookOpen, Users, PlayCircle } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { getImageUrl } from '@/core/utils/url';
+import { formatGradeLevel } from '@/core/utils/localization';
+import { clsx } from 'clsx';
 
-export const CourseCard = ({ course, index }: { course: any, index: number }) => {
+export const CourseCard = ({ course, index, onEnroll }: { course: any, index: number, onEnroll?: (id: string) => void }) => {
+    const navigate = useNavigate();
     return (
         <motion.div
             initial={{ opacity: 0, y: 30 }}
@@ -15,7 +19,7 @@ export const CourseCard = ({ course, index }: { course: any, index: number }) =>
                 {/* Visual Image Section */}
                 <Link to={`/course/${course.id}`} className="relative aspect-[16/10] overflow-hidden block">
                     <img
-                        src={course.image}
+                        src={getImageUrl(course.thumbnail)}
                         alt={course.title}
                         className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
                     />
@@ -29,7 +33,7 @@ export const CourseCard = ({ course, index }: { course: any, index: number }) =>
                             </span>
                         )}
                         <span className="px-5 py-2 rounded-full bg-white/95 dark:bg-[#0c0c0c]/90 backdrop-blur-md text-[var(--text-primary)] text-[10px] font-black shadow-xl">
-                            {course.level}
+                            {formatGradeLevel(course.gradeLevel)}
                         </span>
                     </div>
 
@@ -63,29 +67,56 @@ export const CourseCard = ({ course, index }: { course: any, index: number }) =>
                         <div className="w-8 h-8 rounded-full bg-brand-500/20 border-2 border-brand-500/30 overflow-hidden shadow-lg shadow-brand-500/10">
                             <img src="/src/assets/images/image.png" className="w-full h-full object-cover" alt="Teacher" />
                         </div>
-                        <p className="text-sm text-[var(--text-secondary)] font-black tracking-tight">{course.teacher}</p>
+                        <p className="text-sm text-[var(--text-secondary)] font-black tracking-tight">{course.teacherName}</p>
                     </div>
 
                     <div className="grid grid-cols-2 gap-6 py-6 border-y border-brand-500/10 mb-8">
                         <div className="flex items-center gap-2.5 text-[var(--text-secondary)]">
                             <BookOpen className="w-5 h-5 text-[#C5A059]" />
-                            <span className="text-xs font-black">{course.lectures} حصة</span>
+                            <span className="text-xs font-black">{course.lessonCount} حصة</span>
                         </div>
                         <div className="flex items-center gap-2.5 text-[var(--text-secondary)]">
                             <Users className="w-5 h-5 text-[#C5A059]" />
-                            <span className="text-xs font-black">{course.students} متفوق</span>
+                            <span className="text-xs font-black">{course.enrollmentCount} متفوق</span>
                         </div>
                     </div>
 
                     <div className="mt-auto flex items-center justify-between gap-4">
                         <div className="flex flex-col">
-                            <span className="text-3xl font-black text-[#C5A059] leading-none mb-1">{course.price} <small className="text-sm">ج.م</small></span>
-                            {course.oldPrice && (
-                                <span className="text-sm text-slate-500/70 line-through font-bold">{course.oldPrice} ج.م</span>
+                            {Number(course.price || 0) <= 0 ? (
+                                <span className="text-2xl font-black text-emerald-500 leading-none mb-1">مجاني</span>
+                            ) : (
+                                <>
+                                    <span className="text-3xl font-black text-[#C5A059] leading-none mb-1">{Number(course.price || 0)} <small className="text-sm">ج.م</small></span>
+                                    {course.oldPrice && (
+                                        <span className="text-sm text-slate-500/70 line-through font-bold">{course.oldPrice} ج.م</span>
+                                    )}
+                                </>
                             )}
                         </div>
-                        <button className="px-10 py-4 rounded-2xl bg-[#C5A059] text-white font-black text-xs hover:bg-[#8E6C3D] transition-all active:scale-95 shadow-xl shadow-brand-500/20 hover:shadow-brand-500/40">
-                            احجز الآن
+                        <button
+                            onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                if (course.isSubscribed) {
+                                    navigate(`/course/${course.id}`);
+                                    return;
+                                }
+                                if (Number(course.price || 0) <= 0 && onEnroll) {
+                                    onEnroll(course.id);
+                                } else {
+                                    navigate(`/course/${course.id}`);
+                                }
+                            }}
+                            className={clsx(
+                                "px-10 py-4 rounded-2xl text-white font-black text-xs transition-all active:scale-95 shadow-xl",
+                                course.isSubscribed ? "bg-emerald-500 shadow-emerald-500/20" :
+                                    (Number(course.price || 0) <= 0
+                                        ? "bg-emerald-500 shadow-emerald-500/20 hover:bg-emerald-600"
+                                        : "bg-[#C5A059] shadow-brand-500/20 hover:bg-[#8E6C3D]")
+                            )}
+                        >
+                            {course.isSubscribed ? 'تم الاشتراك' : (Number(course.price || 0) <= 0 ? 'ابدأ مجاناً' : 'احجز الآن')}
                         </button>
                     </div>
                 </div>

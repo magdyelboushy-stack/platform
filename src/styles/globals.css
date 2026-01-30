@@ -148,6 +148,10 @@
     background-color: var(--color-brand);
   }
 
+  .text-gradient {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-brand-500 to-amber-500;
+  }
+
   .shadow-lamp {
     box-shadow: var(--lamp-glow);
   }

@@ -12,25 +12,13 @@ import {
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { useAuthStore } from '@/store/authStore';
-import { apiClient } from '@/core/api/client';
+import { getImageUrl } from '@/core/utils/url';
 
 export function ProfileDropdown() {
     const { user, logout } = useAuthStore();
-    const [blobSrc, setBlobSrc] = useState<string | null>(null);
     const [isOpen, setIsOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
     const navigate = useNavigate();
-
-    const avatarPath = user?.avatar ? (user.avatar.startsWith('http') ? null : `avatars/${user.avatar.split(/[\\/]/).pop()}`) : null;
-
-    useEffect(() => {
-        if (!avatarPath) { setBlobSrc(null); return; }
-        let cancelled = false;
-        apiClient.get(avatarPath, { responseType: 'blob' })
-            .then((res) => { if (!cancelled) setBlobSrc(URL.createObjectURL(res.data as Blob)); })
-            .catch(() => { if (!cancelled) setBlobSrc(null); });
-        return () => { cancelled = true; };
-    }, [avatarPath]);
 
     const studentName = user?.name || "طالب متميز";
 
@@ -48,10 +36,10 @@ export function ProfileDropdown() {
 
     // Get initials from name
     const getInitials = (name: string) => {
-        const names = name.split(' ');
+        const names = name?.split(' ') || [];
         return names.length > 1
             ? `${names[0][0]}${names[names.length - 1][0]}`
-            : name.substring(0, 2);
+            : (name?.substring(0, 2) || "??");
     };
 
     const handleLogout = () => {
@@ -67,6 +55,8 @@ export function ProfileDropdown() {
         { icon: Bell, label: 'الإشعارات', href: '/dashboard/notifications' },
         { icon: Settings, label: 'الإعدادات', href: '/dashboard/settings' },
     ];
+
+    const avatarUrl = getImageUrl(user?.avatar);
 
     return (
         <div ref={dropdownRef} className="relative" dir="rtl">
@@ -84,9 +74,9 @@ export function ProfileDropdown() {
 
                 {/* Avatar Area */}
                 <div className="relative z-10">
-                    {blobSrc ? (
+                    {avatarUrl ? (
                         <img
-                            src={blobSrc}
+                            src={avatarUrl}
                             alt={studentName}
                             className="w-10 h-10 rounded-full object-cover border-2 border-brand-500/40 shadow-lg"
                         />
@@ -123,9 +113,9 @@ export function ProfileDropdown() {
                             <div className="absolute inset-0 bg-gradient-to-br from-brand-600/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
                             <div className="flex items-center gap-5 relative z-10">
                                 <div className="relative">
-                                    {blobSrc ? (
+                                    {avatarUrl ? (
                                         <img
-                                            src={blobSrc}
+                                            src={avatarUrl}
                                             alt={studentName}
                                             className="w-16 h-16 rounded-2xl object-cover border-2 border-brand-500/30 shadow-xl"
                                         />

@@ -30,7 +30,12 @@ class Router {
         // Determine effective URI (Strip base path if necessary)
         $uri = $requestUri;
         $scriptName = str_replace('\\', '/', $_SERVER['SCRIPT_NAME']);
-        $basePath = dirname($scriptName);
+        $scriptDir = str_replace('\\', '/', dirname($scriptName));
+        
+        // Only strip base path if the script is index.php or router.php
+        $isEntryPoint = (strpos($scriptName, 'index.php') !== false || strpos($scriptName, 'router.php') !== false);
+        $basePath = $isEntryPoint ? $scriptDir : '';
+
         if ($basePath !== '/' && $basePath !== '.' && !empty($basePath)) {
             if (strpos($requestUri, $basePath) === 0) {
                 $uri = substr($requestUri, strlen($basePath));
@@ -41,25 +46,34 @@ class Router {
 
         // Logging
         $logFile = __DIR__ . '/../../routing.log';
-        $logMsg = date('[Y-m-d H:i:s] ') . "$method $uri (Raw: $requestUri, Script: $scriptName)\n";
+        $logMsg = date('[Y-m-d H:i:s] ') . "$method $uri (Raw: $requestUri, Script: $scriptName, Base: $basePath)\n";
         @file_put_contents($logFile, $logMsg, FILE_APPEND);
 
         if (isset($_ENV['DEBUG']) && $_ENV['DEBUG'] === 'true') {
             error_log("Router Dispatch: $method $uri (Raw: $requestUri)");
         }
 
-        // --- HARD-CODED AVATAR FALLBACK (Priority) ---
-        if ($method === 'GET' && strpos($uri, 'avatar_') !== false) {
+        // Global Security
+        \App\Middleware\SessionMiddleware::check();
+
+        // --- HARD-CODED FILE FALLBACKS (Priority) ---
+        if ($method === 'GET') {
              $filename = basename($uri);
-             if (strpos($filename, 'avatar_') === 0 && preg_match('/\.(jpg|jpeg|png)$/i', $filename)) {
+             
+             // Avatar Fallback
+             if (strpos($filename, 'avatar_') !== false && preg_match('/\.(jpg|jpeg|png|webp)$/i', $filename)) {
                   $controller = new \App\Controllers\FileController();
                   $controller->serve(['type' => 'avatars', 'filename' => $filename]);
                   return;
              }
+             
+             // Thumbnail Fallback
+             if (strpos($filename, 'thumbnail_') !== false && preg_match('/\.(jpg|jpeg|png|webp)$/i', $filename)) {
+                  $controller = new \App\Controllers\FileController();
+                  $controller->serve(['type' => 'thumbnails', 'filename' => $filename]);
+                  return;
+             }
         }
-
-        // Global Security
-        \App\Middleware\SessionMiddleware::check();
 
         // 1. Try Exact Match
         if (isset($this->routes[$method][$uri])) {

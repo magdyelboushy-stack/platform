@@ -68,7 +68,13 @@ export function LoginForm() {
 
             showDialog('success', `أهلاً يا ${userName}! 👋`, 'مرحباً بك في منصة الأستاذ أحمد راضي. جاري تحويلك...');
             setTimeout(() => {
-                navigate('/dashboard');
+                if (user?.role === 'assistant') {
+                    navigate('/assistant/dashboard');
+                } else if (user?.role === 'teacher' || user?.role === 'admin') {
+                    navigate('/teacher/dashboard');
+                } else {
+                    navigate('/dashboard');
+                }
             }, 1500);
         } catch (err: any) {
             setIsLoading(false);

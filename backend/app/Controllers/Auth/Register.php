@@ -22,9 +22,9 @@ class Register extends BaseController {
             // 0.1 Total File Size Check
             UploadSizeValidator::validate();
 
-            // 1. Rate Limiting (Restored to 5 per hour)
+            // 1. Rate Limiting (Increased for development - 100 per hour)
             $rateLimiter = new AdvancedRateLimiter();
-            if (!$rateLimiter->checkAdvanced('register', $_SERVER['REMOTE_ADDR'], null, 5, 3600)) {
+            if (!$rateLimiter->checkAdvanced('register', $_SERVER['REMOTE_ADDR'], null, 100, 3600)) {
                 $this->json([
                     'error' => 'Too many registry attempts',
                     'message' => 'Please try again in an hour'
@@ -49,7 +49,7 @@ class Register extends BaseController {
                 'email' => $data['email'] ?? null,
                 'password' => $data['password'] ?? null,
                 'phone' => $data['phone'] ?? null,
-                'role' => $data['role'] ?? 'student',
+                'role' => 'student', // SECURITY FIX: Hardcoded - Only students can self-register
                 'parent_phone' => $data['parent_phone'] ?? $data['guardianPhone'] ?? null,
                 'guardian_name' => $data['guardian_name'] ?? $data['guardianName'] ?? null,
                 'school_name' => $data['school_name'] ?? $data['schoolName'] ?? null,

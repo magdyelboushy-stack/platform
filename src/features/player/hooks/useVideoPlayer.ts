@@ -8,6 +8,7 @@ import type { PlayerState, PlayerConfig, VideoQuality } from '../types';
 
 interface UseVideoPlayerOptions {
     src: string;
+    initialTime?: number;
     config?: Partial<PlayerConfig>;
     onProgress?: (currentTime: number, duration: number) => void;
     onComplete?: () => void;
@@ -24,6 +25,7 @@ const defaultConfig: PlayerConfig = {
 
 export function useVideoPlayer({
     src,
+    initialTime = 0,
     config: userConfig,
     onProgress,
     onComplete,
@@ -31,8 +33,8 @@ export function useVideoPlayer({
 }: UseVideoPlayerOptions) {
     const videoRef = useRef<HTMLVideoElement>(null);
     const hlsRef = useRef<Hls | null>(null);
-    const progressTimerRef = useRef<NodeJS.Timeout | null>(null);
-    const lastSavedTimeRef = useRef<number>(0);
+    const progressTimerRef = useRef<any>(null); // Use any to avoid NodeJS namespace issues in browser
+    const lastSavedTimeRef = useRef<number>(initialTime);
 
     const config = { ...defaultConfig, ...userConfig };
 
@@ -109,6 +111,12 @@ export function useVideoPlayer({
         const video = videoRef.current;
         if (!video) return;
 
+        const handleLoadedMetadata = () => {
+            if (initialTime > 0 && video.currentTime === 0) {
+                video.currentTime = initialTime;
+            }
+        };
+
         const handleTimeUpdate = () => {
             const currentTime = video.currentTime;
             const duration = video.duration || 0;
@@ -121,7 +129,7 @@ export function useVideoPlayer({
 
             // Progress callback at intervals
             if (config.saveProgress && onProgress) {
-                if (currentTime - lastSavedTimeRef.current >= config.progressInterval) {
+                if (Math.abs(currentTime - lastSavedTimeRef.current) >= config.progressInterval) {
                     onProgress(currentTime, duration);
                     lastSavedTimeRef.current = currentTime;
                 }
@@ -144,6 +152,7 @@ export function useVideoPlayer({
             }));
         };
 
+        video.addEventListener('loadedmetadata', handleLoadedMetadata);
         video.addEventListener('timeupdate', handleTimeUpdate);
         video.addEventListener('play', handlePlay);
         video.addEventListener('pause', handlePause);
@@ -153,6 +162,7 @@ export function useVideoPlayer({
         video.addEventListener('volumechange', handleVolumeChange);
 
         return () => {
+            video.removeEventListener('loadedmetadata', handleLoadedMetadata);
             video.removeEventListener('timeupdate', handleTimeUpdate);
             video.removeEventListener('play', handlePlay);
             video.removeEventListener('pause', handlePause);
@@ -161,7 +171,7 @@ export function useVideoPlayer({
             video.removeEventListener('canplay', handleCanPlay);
             video.removeEventListener('volumechange', handleVolumeChange);
         };
-    }, [config.saveProgress, config.progressInterval, onProgress, onComplete]);
+    }, [config.saveProgress, config.progressInterval, onProgress, onComplete, initialTime]);
 
     // --------------------------------------------------------
     // Player Controls

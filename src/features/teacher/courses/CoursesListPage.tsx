@@ -1,120 +1,170 @@
-// ============================================================
-// Teacher Courses List Page
-// ============================================================
-
-import { useState } from 'react';
-import { Plus, Search, Filter, BookOpen, Clock, Users, Star } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Plus, Search, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useAuthStore } from '@/store/authStore';
+import { apiClient } from '@/core/api/client';
+import { ENDPOINTS } from '@/core/api/endpoints';
 
-// Courses data - to be fetched from API
-const courses: any[] = [];
+// Components
+import { CourseCard } from '../components/courses/CourseCard';
+import { CourseStats } from '../components/courses/CourseStats';
+
+// Animation Variants
+const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+        opacity: 1,
+        transition: {
+            staggerChildren: 0.1,
+        },
+    },
+};
+
+const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: { opacity: 1, y: 0 },
+};
+
+interface Course {
+    id: string;
+    title: string;
+    description: string;
+    thumbnail: string | null;
+    price: number;
+    educationStage: string;
+    gradeLevel: string;
+    status: 'draft' | 'published' | 'archived';
+    teacherName: string;
+    enrollmentCount: number;
+    createdAt: string;
+}
 
 export function CoursesListPage() {
     const navigate = useNavigate();
+    const { user } = useAuthStore();
+    const [courses, setCourses] = useState<Course[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
 
+    const basePath = user?.role === 'assistant' ? '/assistant' : '/teacher';
+
+    useEffect(() => {
+        fetchCourses();
+    }, []);
+
+    const fetchCourses = async () => {
+        try {
+            const response = await apiClient.get(ENDPOINTS.ADMIN.COURSES.LIST);
+            setCourses(response.data);
+        } catch (error) {
+            console.error('Failed to fetch courses:', error);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const filteredCourses = courses.filter(course =>
+        course.title.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
     return (
-        <div className="space-y-8 animate-in fade-in duration-500">
-            {/* Header */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div>
-                    <h1 className="text-3xl font-black text-[var(--text-primary)] mb-2">إدارة الكورسات</h1>
-                    <p className="text-[var(--text-secondary)] font-medium">قم بإدارة محتوى كورساتك، إضافة دروس جديدة، ومتابعة الاشعارات.</p>
+        <motion.div
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
+            className="space-y-10 p-6 lg:p-8"
+        >
+            {/* Header Area */}
+            <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
+                <div className="space-y-2">
+                    <h1 className="text-3xl md:text-5xl font-black text-[var(--text-primary)] font-display tracking-tight leading-tight">
+                        إدارة <span className="text-brand-500">محتواك</span>
+                    </h1>
+                    <p className="text-[var(--text-secondary)] font-bold text-sm md:text-base opacity-60">
+                        لدينا اليوم {courses.length} كورسات قيد الإدارة. هل سنضيف جديداً؟
+                    </p>
                 </div>
-                <button
-                    onClick={() => navigate('/teacher/courses/new')}
-                    className="flex items-center gap-2 px-6 py-3 bg-cyan-600 hover:bg-cyan-500 text-white rounded-xl font-bold shadow-lg shadow-cyan-500/20 transition-all hover:-translate-y-1"
-                >
-                    <Plus className="w-5 h-5" />
-                    <span>كورس جديد</span>
-                </button>
-            </div>
 
-            {/* Filters */}
-            <div className="flex flex-col sm:flex-row gap-4">
-                <div className="flex-1 relative">
-                    <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[var(--text-secondary)]" />
-                    <input
-                        type="text"
-                        placeholder="ابحث عن كورس..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full pr-12 pl-4 py-3 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-xl text-[var(--text-primary)] focus:border-cyan-500 outline-none transition-colors"
-                    />
-                </div>
-                <button className="px-4 py-3 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-xl text-[var(--text-secondary)] hover:text-[var(--text-primary)] font-bold flex items-center gap-2 transition-colors">
-                    <Filter className="w-4 h-4" />
-                    <span>تصفية</span>
-                </button>
-            </div>
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+                    <div className="relative group flex-1 sm:flex-initial">
+                        <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-secondary)] opacity-40 group-focus-within:text-brand-500 transition-colors" />
+                        <input
+                            type="text"
+                            placeholder="ابحث عن كورس..."
+                            className="w-full sm:w-64 pr-11 pl-4 py-3 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl text-xs font-bold text-[var(--text-primary)] focus:border-brand-500 outline-none transition-all shadow-sm group-hover:border-brand-500/30"
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                        />
+                    </div>
 
-            {/* Course Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {courses.map((course: any) => (
-                    <div
-                        key={course.id}
-                        className="group bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl overflow-hidden hover:border-cyan-500/30 transition-all duration-300 hover:shadow-xl hover:shadow-cyan-500/5 cursor-pointer flex flex-col"
-                        onClick={() => navigate(`/teacher/courses/${course.id}`)}
+                    <button
+                        onClick={() => navigate(`${basePath}/courses/new`)}
+                        className="flex items-center justify-center gap-2 px-6 py-3 bg-brand-500 hover:bg-brand-600 text-white rounded-2xl font-black text-xs shadow-xl shadow-brand-500/20 transition-all active:scale-95 whitespace-nowrap"
                     >
-                        {/* Thumbnail */}
-                        <div className="aspect-video relative overflow-hidden bg-[var(--bg-main)]">
-                            <img
-                                src={course.thumbnail}
-                                alt={course.title}
-                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                            />
-                            <div className="absolute top-3 right-3 flex gap-2">
-                                <span className={`px-2 py-1 rounded-lg text-xs font-bold backdrop-blur-md ${course.status === 'published'
-                                    ? 'bg-emerald-500/20 text-emerald-500 border border-emerald-500/20'
-                                    : 'bg-amber-500/20 text-amber-500 border border-amber-500/20'
-                                    }`}>
-                                    {course.status === 'published' ? 'منشور' : 'مسودة'}
-                                </span>
-                            </div>
-                        </div>
-
-                        {/* Content */}
-                        <div className="p-6 flex-1 flex flex-col">
-                            <h3 className="text-lg font-black text-[var(--text-primary)] mb-3 line-clamp-2 leading-relaxed group-hover:text-cyan-500 transition-colors">
-                                {course.title}
-                            </h3>
-
-                            <div className="flex items-center gap-4 text-xs text-[var(--text-secondary)] font-bold mb-6">
-                                <div className="flex items-center gap-1.5">
-                                    <BookOpen className="w-4 h-4 text-cyan-500" />
-                                    <span>{course.lessons} درس</span>
-                                </div>
-                                <div className="flex items-center gap-1.5">
-                                    <Clock className="w-4 h-4 text-cyan-500" />
-                                    <span>{course.duration}</span>
-                                </div>
-                            </div>
-
-                            <div className="mt-auto pt-6 border-t border-[var(--border-color)] flex items-center justify-between">
-                                <div className="flex items-center gap-2">
-                                    <Users className="w-4 h-4 text-[var(--text-secondary)]" />
-                                    <span className="text-sm font-bold text-[var(--text-primary)]">{course.students}</span>
-                                </div>
-                                <div className="flex items-center gap-1 text-amber-500 font-bold text-sm">
-                                    <Star className="w-4 h-4 fill-current" />
-                                    <span>{course.rating || '-'}</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                ))}
-
-                {/* New Course Card (Empty State) */}
-                <button
-                    onClick={() => navigate('/teacher/courses/new')}
-                    className="border-2 border-dashed border-[var(--border-color)] rounded-2xl flex flex-col items-center justify-center gap-4 p-8 text-[var(--text-secondary)] hover:border-cyan-500 hover:text-cyan-500 hover:bg-cyan-500/5 transition-all group min-h-[300px]"
-                >
-                    <div className="w-16 h-16 rounded-full bg-[var(--bg-main)] flex items-center justify-center group-hover:scale-110 transition-transform shadow-inner border border-[var(--border-color)]">
-                        <Plus className="w-8 h-8" />
-                    </div>
-                    <span className="font-bold text-lg">أضف كورس جديد</span>
-                </button>
+                        <Plus className="w-4 h-4" />
+                        <span>إنشاء كورس</span>
+                    </button>
+                </div>
             </div>
-        </div>
+
+            {/* Stats Cards Section */}
+            <CourseStats totalCourses={courses.length} />
+
+            {/* Courses Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
+                {isLoading ? (
+                    // Skeleton Loading
+                    Array(3).fill(0).map((_, i) => (
+                        <div key={i} className="h-[400px] bg-[var(--bg-card)] border border-[var(--border-color)] rounded-[2.5rem] animate-pulse" />
+                    ))
+                ) : (
+                    <AnimatePresence mode="popLayout">
+                        {filteredCourses.map((course) => (
+                            <motion.div
+                                layout
+                                key={course.id}
+                                initial={{ opacity: 0, scale: 0.9 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                exit={{ opacity: 0, scale: 0.9 }}
+                                transition={{ duration: 0.3 }}
+                            >
+                                <CourseCard course={course} />
+                            </motion.div>
+                        ))}
+                    </AnimatePresence>
+                )}
+
+                {/* Add New Quick Card */}
+                {!isLoading && searchTerm === '' && (
+                    <motion.button
+                        variants={itemVariants}
+                        onClick={() => navigate(`${basePath}/courses/new`)}
+                        className="border-2 border-dashed border-[var(--border-color)] rounded-[2.5rem] flex flex-col items-center justify-center gap-6 p-8 text-[var(--text-secondary)] hover:border-brand-500/50 hover:text-brand-500 hover:bg-brand-500/5 transition-all group min-h-[400px] shadow-sm active:scale-[0.98]"
+                    >
+                        <div className="w-20 h-20 rounded-3xl bg-[var(--bg-card)] flex items-center justify-center group-hover:scale-110 group-hover:rotate-6 transition-all shadow-inner border border-[var(--border-color)] group-hover:border-brand-500/30">
+                            <Plus className="w-10 h-10" />
+                        </div>
+                        <div className="text-center">
+                            <span className="font-black text-xl block mb-2">أضف كورس جديد</span>
+                            <p className="text-xs font-bold opacity-60">ابدأ الآن في بناء مستقبلك التعليمي</p>
+                        </div>
+                    </motion.button>
+                )}
+            </div>
+
+            {/* Empty State */}
+            {!isLoading && filteredCourses.length === 0 && (
+                <motion.div
+                    variants={itemVariants}
+                    className="flex flex-col items-center justify-center py-32 text-center"
+                >
+                    <div className="w-28 h-28 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-[3rem] flex items-center justify-center mb-8 shadow-inner">
+                        <Search className="w-12 h-12 text-[var(--text-secondary)] opacity-20" />
+                    </div>
+                    <h3 className="text-2xl font-black text-[var(--text-primary)] mb-2">لا توجد نتائج مطابقة</h3>
+                    <p className="text-[var(--text-secondary)] font-bold opacity-60 max-w-xs leading-relaxed">جرب البحث بكلمات أخرى أو أضف كورساً جديداً لغرض التجربة.</p>
+                </motion.div>
+            )}
+        </motion.div>
     );
 }

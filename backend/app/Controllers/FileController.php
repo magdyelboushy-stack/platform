@@ -8,19 +8,11 @@ use App\Utils\SecureSession;
 class FileController extends BaseController {
 
     public function serve($params) {
-        // 1. Auth Check (Must be logged in)
-        SecureSession::start();
-        if (!SecureSession::get('user_id')) {
-            http_response_code(403);
-            die('Access Denied');
-        }
-
-        // 2. Validate Params
-        $type = $params['type'] ?? ''; // 'avatars' or 'documents'
+        $type = $params['type'] ?? ''; 
         $filename = $params['filename'] ?? '';
 
         // Allow only specific types
-        if (!in_array($type, ['avatars', 'documents'])) {
+        if (!in_array($type, ['avatars', 'documents', 'thumbnails'])) {
             http_response_code(400);
             die('Invalid file type');
         }
@@ -28,19 +20,35 @@ class FileController extends BaseController {
         // sanitize filename
         $filename = basename($filename);
 
+        // 1. Auth Check (Documents require login, avatars/thumbnails are public)
+        if ($type === 'documents') {
+            SecureSession::start();
+            if (!SecureSession::get('user_id')) {
+                http_response_code(403);
+                die('Access Denied');
+            }
+        }
+
         // 3. Resolve Path
         $path = __DIR__ . '/../../storage/' . $type . '/' . $filename;
         $realPath = realpath($path);
 
         // 4. Security Check (Normalized for Windows)
         $storageRoot = realpath(__DIR__ . '/../../storage/');
-        $normalizedPath = str_replace('\\', '/', $realPath);
-        $normalizedRoot = str_replace('\\', '/', $storageRoot);
         
-        if (!$realPath || !file_exists($realPath) || strpos($normalizedPath, $normalizedRoot) !== 0) {
-            error_log("File Auth Failure: Path: $normalizedPath, Expected Start: $normalizedRoot");
+        $normalizedPath = $realPath ? str_replace('\\', '/', $realPath) : 'NULL';
+        $normalizedRoot = $storageRoot ? str_replace('\\', '/', $storageRoot) : 'NULL';
+        
+        if (!$realPath || !file_exists($realPath)) {
+            error_log("FILE_SERVE_404: File not found at $path");
             http_response_code(404);
             die('File not found');
+        }
+
+        if (!$storageRoot || stripos($normalizedPath, $normalizedRoot) !== 0) {
+            error_log("FILE_SERVE_403: Security check failed. Path: $normalizedPath, Root: $normalizedRoot");
+            http_response_code(403);
+            die('Access Denied');
         }
 
         // 5. Authorization Logic (Optional Enhancement: Check if user owns the file)

@@ -7,6 +7,7 @@ export const ENDPOINTS = {
     AUTH: {
         LOGIN: '/auth/login',
         REGISTER: '/auth/register',
+
         VALIDATE_STEP: '/auth/validate-step', // New Endpoint
         LOGOUT: '/auth/logout',
         REFRESH: '/auth/refresh',
@@ -22,7 +23,7 @@ export const ENDPOINTS = {
         LIST: '/courses',
         DETAIL: (id: string) => `/courses/${id}`,
         ENROLL: (id: string) => `/courses/${id}/enroll`,
-        MY_COURSES: '/courses/enrolled',
+        MY_COURSES: '/student/courses',
         LESSONS: (courseId: string) => `/courses/${courseId}/lessons`,
         LESSON_DETAIL: (courseId: string, lessonId: string) =>
             `/courses/${courseId}/lessons/${lessonId}`,
@@ -30,9 +31,9 @@ export const ENDPOINTS = {
 
     // Video Player
     PLAYER: {
-        STREAM_URL: (lessonId: string) => `/player/${lessonId}/stream`,
-        PROGRESS: (lessonId: string) => `/player/${lessonId}/progress`,
-        COMPLETE: (lessonId: string) => `/player/${lessonId}/complete`,
+        OTP: (id: string) => `/videos/${id}/otp`,
+        PROGRESS: (id: string) => `/player/progress/${id}`,
+        COMPLETE: (id: string) => `/lessons/${id}/complete`,
     },
 
     // Exams
@@ -73,5 +74,49 @@ export const ENDPOINTS = {
         USER_DETAIL: (id: string) => `/admin/users/${id}`,
         APPROVE_USER: (id: string) => `/admin/users/${id}/approve`,
         BLOCK_USER: (id: string) => `/admin/users/${id}/block`,
+
+        // Student Requests
+        LIST_PENDING_REQUESTS: '/admin/requests/pending',
+        APPROVE_REQUEST: (id: string) => `/admin/requests/${id}/approve`,
+        REJECT_REQUEST: (id: string) => `/admin/requests/${id}/reject`,
+
+        // Students Management
+        LIST_ACTIVE_STUDENTS: '/admin/students/active',
+        GET_STUDENT_STATS: '/admin/students/stats',
+        UPDATE_STUDENT_STATUS: (id: string) => `/admin/students/${id}/status`,
+        UPDATE_STUDENT: (id: string) => `/admin/students/${id}/update`,
+        DELETE_STUDENT: (id: string) => `/admin/students/${id}/delete`,
+
+        // Assistants Management
+        ASSISTANTS: {
+            LIST: '/admin/assistants',
+            CREATE: '/admin/assistants',
+            UPDATE: (id: string) => `/admin/assistants/${id}/update`,
+            DELETE: (id: string) => `/admin/assistants/${id}/delete`,
+        },
+
+        // Courses Management
+        COURSES: {
+            LIST: '/admin/courses',
+            CREATE: '/admin/courses',
+            DETAIL: (id: string) => `/admin/courses/${id}`,
+            UPDATE: (id: string) => `/admin/courses/${id}/update`,
+            DELETE: (id: string) => `/admin/courses/${id}/delete`,
+            UPLOAD_THUMBNAIL: '/admin/courses/upload-thumbnail',
+            SECTIONS: (courseId: string) => `/admin/courses/${courseId}/sections`,
+        },
+
+        // Sections Management
+        SECTIONS: {
+            UPDATE: (id: string) => `/admin/sections/${id}/update`,
+            DELETE: (id: string) => `/admin/sections/${id}/delete`,
+            LESSONS: (sectionId: string) => `/admin/sections/${sectionId}/lessons`,
+        },
+
+        // Lessons Management
+        LESSONS: {
+            UPDATE: (id: string) => `/admin/lessons/${id}/update`,
+            DELETE: (id: string) => `/admin/lessons/${id}/delete`,
+        },
     },
 } as const;

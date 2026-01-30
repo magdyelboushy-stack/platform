@@ -80,7 +80,7 @@ apiClient.interceptors.response.use(
                 }
             } else {
                 logout();
-                const backendMsg = error.response.data?.message;
+                const backendMsg = error.response?.data?.error || error.response?.data?.message;
                 showToast({
                     type: 'error',
                     title: 'تنبيه الأمان',
@@ -92,7 +92,7 @@ apiClient.interceptors.response.use(
         // Handle 403 - Forbidden
         if (error.response?.status === 403) {
             const { showToast } = useUIStore.getState();
-            const backendMsg = error.response.data?.message;
+            const backendMsg = error.response.data?.error || error.response.data?.message;
             showToast({
                 type: 'error',
                 title: 'دخول غير مصرح',

@@ -48,6 +48,15 @@ class Validator {
             if (strlen($value) > 255) {
                 $this->addError($field, "Email is too long");
             }
+            
+            // ✅ SECURITY FIX: Validate email domain has MX records (prevents typos like gmail.comm)
+            $parts = explode('@', $value);
+            if (count($parts) === 2) {
+                $domain = $parts[1];
+                if (!checkdnsrr($domain, 'MX')) {
+                    $this->addError($field, "Email domain does not accept mail. Please check spelling (e.g., gmail.com, yahoo.com)");
+                }
+            }
         }
 
         // Min length validation

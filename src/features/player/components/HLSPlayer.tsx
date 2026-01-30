@@ -20,12 +20,16 @@ import {
 interface HLSPlayerProps {
     src: string;
     onComplete?: () => void;
+    onTimeUpdate?: (seconds: number) => void;
+    initialTime?: number;
 }
 
-export function HLSPlayer({ src, onComplete }: HLSPlayerProps) {
+export function HLSPlayer({ src, onComplete, onTimeUpdate, initialTime = 0 }: HLSPlayerProps) {
     const { videoRef, state, controls, formattedTime, formattedDuration, progressPercent } = useVideoPlayer({
         src,
         onComplete,
+        initialTime,
+        onProgress: (seconds) => onTimeUpdate?.(seconds),
         config: { autoPlay: true }
     });
 

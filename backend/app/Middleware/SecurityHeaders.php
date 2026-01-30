@@ -19,13 +19,17 @@ class SecurityHeaders {
         header("X-Content-Type-Options: nosniff");
         
         // Content Security Policy (CSP)
+        $isLocal = !isset($_ENV['APP_ENV']) || $_ENV['APP_ENV'] === 'local';
+        $allowedOrigins = $_ENV['ALLOWED_ORIGINS'] ?? '';
+        $extraOrigins = str_replace(',', ' ', $allowedOrigins);
+
         $csp = implode('; ', [
             "default-src 'self'",
             "script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com",
             "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
             "font-src 'self' https://fonts.gstatic.com",
-            "img-src 'self' data: https:",
-            "connect-src 'self'",
+            "img-src 'self' data: https: " . $extraOrigins,
+            "connect-src 'self' " . $extraOrigins,
             "frame-ancestors 'self'",
             "base-uri 'self'",
             "form-action 'self'"

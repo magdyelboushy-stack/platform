@@ -94,19 +94,17 @@ export const useAuthStore = create<AuthStore>()(
                     formData.append('csrf_token', csrfToken);
 
                     // 2. Call API
-                    // Note: When sending FormData, browser sets 'Content-Type: multipart/form-data' automatically
                     await api.post(ENDPOINTS.AUTH.REGISTER, formData);
 
-                    // 3. No auto-login per requirements (Wait for admin approval or verify email)
                     set((state) => { state.isLoading = false; });
-
-                    // Return success to the component
                     return true;
                 } catch (error) {
                     set((state) => { state.isLoading = false; });
                     throw error;
                 }
             },
+
+
 
             // --------------------------------------------------------
             // Login Action
@@ -259,7 +257,8 @@ export const useAuthStore = create<AuthStore>()(
             partialize: (state) => ({
                 tokens: state.tokens,
                 user: state.user,
-                csrfToken: state.csrfToken, // Persist CSRF token
+                // ✅ SECURITY FIX: Do NOT persist CSRF token to localStorage (XSS vulnerability)
+                // Fetch fresh token from backend on each session
                 isAuthenticated: state.isAuthenticated,
             }),
         }

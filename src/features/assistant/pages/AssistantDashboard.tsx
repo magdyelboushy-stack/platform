@@ -7,6 +7,7 @@ import {
     Clock, CheckCircle, FileText,
     MessageSquare, Ticket
 } from 'lucide-react';
+import { useAuthStore } from '@/store/authStore';
 
 const mockActivity = [
     { id: 1, action: 'تصحيح واجب (النحو - الدرس الأول)', student: 'أحمد محمود', time: 'منذ 10 دقائق', type: 'grading' },
@@ -16,16 +17,17 @@ const mockActivity = [
 
 const mockStats = [
     { title: 'واجبات تم تصحيحها', value: '0', icon: FileText, color: 'text-emerald-500', bg: 'bg-emerald-500/10' },
-    { title: 'تذاكر دعم مفتوحة', value: '0', icon: MessageSquare, color: 'text-amber-500', bg: 'bg-amber-500/10' },
-    { title: 'أكواد تم تفعيلها', value: '0', icon: Ticket, color: 'text-indigo-500', bg: 'bg-indigo-500/10' },
+    { title: 'تذاكر دعم مفتوحة', value: '0', icon: MessageSquare, color: 'text-[#C5A059]', bg: 'bg-[#C5A059]/10' },
+    { title: 'أكواد تم تفعيلها', value: '0', icon: Ticket, color: 'text-blue-500', bg: 'bg-blue-500/10' },
 ];
 
 export function AssistantDashboardPage() {
+    const { user } = useAuthStore();
     return (
         <div className="space-y-8 animate-in fade-in duration-500">
             {/* Header */}
             <div>
-                <h1 className="text-3xl font-black text-[var(--text-primary)] mb-2">مرحباً بك، محمد 👋</h1>
+                <h1 className="text-3xl font-black text-[var(--text-primary)] mb-2">مرحباً بك، {user?.name || 'مساعدنا'} 👋</h1>
                 <p className="text-[var(--text-secondary)] font-bold">إليك ملخص سريع لنشاطك اليوم والمهام المعلقة.</p>
             </div>
 
@@ -49,23 +51,23 @@ export function AssistantDashboardPage() {
                 <div className="lg:col-span-2 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-6">
                     <div className="flex items-center justify-between mb-6">
                         <h3 className="font-black text-xl text-[var(--text-primary)] flex items-center gap-2">
-                            <Clock className="w-5 h-5 text-amber-500" />
+                            <Clock className="w-5 h-5 text-[#C5A059]" />
                             مهام تتطلب انتباهك
                         </h3>
-                        <span className="text-xs font-bold bg-amber-500/10 text-amber-500 px-2 py-1 rounded-lg">5 مهام معلقة</span>
+                        <span className="text-xs font-bold bg-[#C5A059]/10 text-[#C5A059] px-2 py-1 rounded-lg">5 مهام معلقة</span>
                     </div>
 
                     <div className="space-y-4">
                         {[1, 2, 3].map((_, i) => (
-                            <div key={i} className="flex items-center justify-between p-4 bg-[var(--bg-main)] rounded-xl border border-[var(--border-color)] hover:border-amber-500/30 transition-colors">
+                            <div key={i} className="flex items-center justify-between p-4 bg-[var(--bg-main)] rounded-xl border border-[var(--border-color)] hover:border-[#C5A059]/30 transition-colors">
                                 <div className="flex items-center gap-4">
-                                    <div className="w-2 h-12 bg-amber-500 rounded-full" />
+                                    <div className="w-2 h-12 bg-[#C5A059] rounded-full" />
                                     <div>
                                         <h4 className="font-bold text-[var(--text-primary)]">مراجعة 50 واجب جديد</h4>
                                         <p className="text-xs text-[var(--text-secondary)] mt-1">كورس القواعد النحوية - الصف الثالث الثانوي</p>
                                     </div>
                                 </div>
-                                <button className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-sm font-bold transition-colors">
+                                <button className="px-4 py-2 bg-[#C5A059] hover:bg-[#C5A059]/90 text-white rounded-lg text-sm font-bold transition-colors">
                                     بدء العمل
                                 </button>
                             </div>
@@ -80,7 +82,7 @@ export function AssistantDashboardPage() {
                         {mockActivity.map((activity) => (
                             <div key={activity.id} className="relative pr-8">
                                 <div className={`absolute right-0 top-1 w-5 h-5 rounded-full border-2 border-[var(--bg-card)] flex items-center justify-center ${activity.type === 'grading' ? 'bg-emerald-500' :
-                                    activity.type === 'code' ? 'bg-indigo-500' : 'bg-cyan-500'
+                                    activity.type === 'code' ? 'bg-[#C5A059]' : 'bg-cyan-500'
                                     }`}>
                                     <CheckCircle className="w-3 h-3 text-white" />
                                 </div>

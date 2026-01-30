@@ -11,6 +11,7 @@ CREATE TABLE IF NOT EXISTS users (
     password VARCHAR(255) NOT NULL,
     phone VARCHAR(20) NOT NULL,
     role ENUM('student', 'parent', 'teacher', 'admin', 'assistant', 'support') DEFAULT 'student',
+    permissions JSON NULL,
     
     -- Student Specific Fields
     education_stage ENUM('primary', 'prep', 'secondary') NULL,

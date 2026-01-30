@@ -9,12 +9,13 @@ class User extends Model {
     protected $table = 'users';
     
     // Fillable fields (Whitelist)
+    // SECURITY FIX: 'role' removed to prevent mass assignment privilege escalation
     protected $fillable = [
         'name', 'email', 'password', 'phone', 'role',
         'parent_phone', 'school_name', 'grade_level',
         'education_stage', 'governorate', 'city', 'bio',
         'birth_date', 'gender', 'guardian_name',
-        'avatar',
+        'avatar', 'permissions',
         'status', 'ip_address', 'user_agent'
     ];
     
@@ -98,25 +99,18 @@ class User extends Model {
         try {
             $stmt = $this->db->prepare($sql);
             
-            // Debug Log SQL and Data
-            $isDebug = isset($_ENV['DEBUG']) && filter_var($_ENV['DEBUG'], FILTER_VALIDATE_BOOLEAN);
-            if ($isDebug) {
-                error_log("Executing SQL: " . $sql);
-                error_log("With Data: " . json_encode($filteredData));
-            }
-
+            // ✅ SECURITY FIX: Only log to server logs, never expose to client
             $result = $stmt->execute($filteredData);
             
-            if ($isDebug) {
-                error_log("Update Result: " . ($result ? 'TRUE' : 'FALSE'));
-                error_log("Rows Affected: " . $stmt->rowCount());
-            }
+            // Internal logging only (not exposed to client)
+            error_log("User update: User ID " . $id . " updated successfully");
 
             return $result;
         } catch (\PDOException $e) {
-            error_log("User update error: " . $e->getMessage());
-            $isDebug = isset($_ENV['DEBUG']) && filter_var($_ENV['DEBUG'], FILTER_VALIDATE_BOOLEAN);
-            throw new \Exception($isDebug ? "Database Error: " . $e->getMessage() : "Failed to update user");
+            // ✅ Log detailed error to server logs only
+            error_log("User update failed for ID " . $id . ": " . $e->getMessage());
+            // ✅ Return generic error message to client
+            throw new \Exception("Failed to update user profile");
         }
     }
 

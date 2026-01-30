@@ -11,6 +11,13 @@ class BaseController {
     }
 
     protected function getInput() {
-        return json_decode(file_get_contents('php://input'), true) ?? [];
+        $rawInput = file_get_contents('php://input');
+        $decoded = json_decode($rawInput, true);
+        
+        if (is_array($decoded)) {
+            return array_merge($_POST, $decoded);
+        }
+        
+        return $_POST;
     }
 }

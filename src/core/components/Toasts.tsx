@@ -21,11 +21,11 @@ export function Toasts() {
                         animate={{ opacity: 1, x: 0, scale: 1 }}
                         exit={{ opacity: 0, scale: 0.9, transition: { duration: 0.2 } }}
                         className={clsx(
-                            "pointer-events-auto relative flex items-start gap-4 p-4 rounded-2xl border backdrop-blur-xl shadow-2xl overflow-hidden group",
-                            toast.type === 'success' && "bg-emerald-500/10 border-emerald-500/20 text-emerald-700 dark:text-emerald-400",
-                            toast.type === 'error' && "bg-red-500/10 border-red-500/20 text-red-700 dark:text-red-400",
-                            toast.type === 'warning' && "bg-amber-500/10 border-amber-500/20 text-amber-700 dark:text-amber-400",
-                            toast.type === 'info' && "bg-blue-500/10 border-blue-500/20 text-blue-700 dark:text-blue-400"
+                            "pointer-events-auto relative flex items-start gap-4 p-4 rounded-2xl border backdrop-blur-2xl shadow-[0_20px_50px_rgba(0,0,0,0.3)] overflow-hidden group",
+                            toast.type === 'success' && "bg-emerald-500/90 border-emerald-500/50 text-white",
+                            toast.type === 'error' && "bg-rose-500/90 border-rose-500/50 text-white",
+                            toast.type === 'warning' && "bg-amber-500/90 border-amber-500/50 text-slate-900",
+                            toast.type === 'info' && "bg-sky-500/90 border-sky-500/50 text-white"
                         )}
                     >
                         {/* Status Icon */}
@@ -59,10 +59,10 @@ export function Toasts() {
                             transition={{ duration: (toast.duration || 5000) / 1000, ease: "linear" }}
                             className={clsx(
                                 "absolute bottom-0 left-0 h-1",
-                                toast.type === 'success' && "bg-emerald-500",
-                                toast.type === 'error' && "bg-red-500",
-                                toast.type === 'warning' && "bg-amber-500",
-                                toast.type === 'info' && "bg-blue-500"
+                                toast.type === 'success' && "bg-emerald-300",
+                                toast.type === 'error' && "bg-rose-300",
+                                toast.type === 'warning' && "bg-amber-100",
+                                toast.type === 'info' && "bg-sky-300"
                             )}
                         />
                     </motion.div>

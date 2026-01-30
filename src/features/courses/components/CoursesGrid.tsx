@@ -5,9 +5,10 @@ import { CourseCard } from './CourseCard';
 interface CoursesGridProps {
     courses: any[];
     levelName: string;
+    onEnroll: (courseId: string) => void;
 }
 
-export const CoursesGrid = ({ courses, levelName }: CoursesGridProps) => {
+export const CoursesGrid = ({ courses, levelName, onEnroll }: CoursesGridProps) => {
     return (
         <section className="py-12 pb-32">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -23,7 +24,7 @@ export const CoursesGrid = ({ courses, levelName }: CoursesGridProps) => {
                 {courses.length > 0 ? (
                     <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-10">
                         {courses.map((course, i) => (
-                            <CourseCard key={course.id} course={course} index={i} />
+                            <CourseCard key={course.id} course={course} index={i} onEnroll={onEnroll} />
                         ))}
                     </div>
                 ) : (

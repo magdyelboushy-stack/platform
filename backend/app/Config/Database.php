@@ -80,6 +80,12 @@ class Database {
             // تفعيل strict mode (منع البيانات غير الصحيحة)
             $this->conn->exec("SET sql_mode = 'STRICT_ALL_TABLES'");
 
+            // Set session variables for audit triggers
+            $ip = $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1';
+            $ua = $_SERVER['HTTP_USER_AGENT'] ?? 'CLI/Unknown';
+            $this->conn->exec("SET @current_ip = " . $this->conn->quote($ip));
+            $this->conn->exec("SET @current_user_agent = " . $this->conn->quote($ua));
+
         } catch (PDOException $e) {
             // عدم كشف تفاصيل الاتصال في رسالة الخطأ
             error_log("Database connection error: " . $e->getMessage());

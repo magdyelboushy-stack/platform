@@ -36,6 +36,7 @@ class Me extends BaseController {
                     'phone' => $user['phone'] ?? null,
                     'parent_phone' => $user['parent_phone'] ?? null,
                     'status' => $user['status'],
+                    'permissions' => isset($user['permissions']) ? json_decode($user['permissions'] ?? '[]', true) : [],
                 ]
             ]);
             

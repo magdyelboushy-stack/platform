@@ -23,15 +23,7 @@ import {
 import { useAuthStore } from '@/store/authStore';
 import { ThemeToggle } from '@/core/components/ThemeToggle';
 import { clsx } from 'clsx';
-
-// Mock permissions for now - in a real app these would come from the user object or API
-const MOCK_PERMISSIONS = {
-    'can_grade_homework': true,
-    'can_manage_codes': true,
-    'can_handle_support': true,
-    'can_manage_courses': false, // Assistants usually don't edit courses
-    'can_view_requests': true, // View student registration requests
-};
+import { getImageUrl } from '@/core/utils/url';
 
 export function AssistantLayout() {
     const [isSidebarOpen, setSidebarOpen] = useState(true);
@@ -43,13 +35,33 @@ export function AssistantLayout() {
         navigate('/');
     };
 
+    // Permission Helper
+    const hasPermission = (permission: string) => {
+        if (!user?.permissions) return false;
+        return user.permissions.includes(permission);
+    };
+
+    // Permission Label Mapping for Display
+    const PERMISSION_LABELS: Record<string, string> = {
+        'students': 'الطلاب',
+        'homework': 'الواجبات',
+        'exams': 'الامتحانات',
+        'requests': 'طلبات الدخول',
+        'codes': 'الكودات',
+        'support': 'الدعم الفني',
+        'courses': 'المحتوى التعليمي'
+    };
+
     // Dynamic Navigation based on permissions
     const navItems = [
         { icon: LayoutDashboard, label: 'لوحة التحكم', path: '/assistant/dashboard', end: true, visible: true },
-        { icon: FileText, label: 'تصحيح الواجبات', path: '/assistant/grading', visible: MOCK_PERMISSIONS.can_grade_homework },
-        { icon: Ticket, label: 'أكواد التفعيل', path: '/assistant/codes', visible: MOCK_PERMISSIONS.can_manage_codes },
-        { icon: Users, label: 'طلبات الحسابات', path: '/assistant/requests', visible: MOCK_PERMISSIONS.can_view_requests },
-        { icon: MessageSquare, label: 'الدعم الفني', path: '/assistant/support', visible: MOCK_PERMISSIONS.can_handle_support },
+        { icon: Users, label: 'الطلاب', path: '/assistant/students', visible: hasPermission('students') },
+        { icon: FileText, label: 'الواجبات', path: '/assistant/grading', visible: hasPermission('homework') },
+        { icon: FileText, label: 'الامتحانات', path: '/assistant/exams', visible: hasPermission('exams') },
+        { icon: UserCog, label: 'طلبات الدخول', path: '/assistant/requests', visible: hasPermission('requests') },
+        { icon: Ticket, label: 'الكودات', path: '/assistant/codes', visible: hasPermission('codes') },
+        { icon: MessageSquare, label: 'الدعم الفني', path: '/assistant/support', visible: hasPermission('support') },
+        { icon: LayoutDashboard, label: 'المحتوى التعليمي', path: '/assistant/courses', visible: hasPermission('courses') },
     ].filter(item => item.visible);
 
     return (
@@ -78,25 +90,25 @@ export function AssistantLayout() {
             >
                 {/* Brand Area */}
                 <div className="h-24 flex items-center gap-3 px-6 border-b border-[var(--border-color)] bg-[var(--bg-secondary)]">
-                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/20">
-                        <UserCog className="w-6 h-6 text-white" />
+                    <div className="w-10 h-10 rounded-xl bg-[#C5A059]/10 flex items-center justify-center border border-[#C5A059]/20 shadow-lg shadow-[#C5A059]/5">
+                        <UserCog className="w-6 h-6 text-[#C5A059]" />
                     </div>
                     <div className="flex flex-col">
                         <h1 className="font-black text-lg text-[var(--text-primary)] tracking-wide">بوابة المساعد</h1>
-                        <span className="text-[10px] font-bold text-indigo-500 uppercase tracking-widest">Assistant Panel</span>
+                        <span className="text-[10px] font-bold text-[#C5A059] uppercase tracking-widest">Assistant Panel</span>
                     </div>
                 </div>
 
                 {/* Profile Widget */}
                 <div className="p-6">
                     <div className="flex items-center gap-4 bg-[var(--bg-card)] p-4 rounded-2xl border border-[var(--border-color)] relative overflow-hidden group shadow-sm">
-                        <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                        <div className="absolute inset-0 bg-gradient-to-r from-[#C5A059]/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
 
                         <div className="relative">
                             <img
-                                src={user?.avatar || "https://api.dicebear.com/7.x/avataaars/svg?seed=Assistant"}
+                                src={getImageUrl(user?.avatar) || "https://api.dicebear.com/7.x/avataaars/svg?seed=Assistant"}
                                 alt="Profile"
-                                className="w-12 h-12 rounded-full border-2 border-[var(--bg-secondary)]"
+                                className="w-12 h-12 rounded-full border-2 border-[var(--bg-secondary)] object-cover bg-[var(--bg-card)]"
                             />
                             <div className="absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 rounded-full border-2 border-[var(--bg-card)]" />
                         </div>
@@ -118,7 +130,7 @@ export function AssistantLayout() {
                             className={({ isActive }) => clsx(
                                 "flex items-center gap-3 px-4 py-3.5 rounded-xl font-bold transition-all duration-200 group relative overflow-hidden",
                                 isActive
-                                    ? "text-white bg-gradient-to-r from-indigo-500 to-purple-600 shadow-lg shadow-indigo-500/20"
+                                    ? "text-white bg-[#C5A059] shadow-lg shadow-[#C5A059]/20"
                                     : "text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-main)]"
                             )}
                         >
@@ -135,12 +147,14 @@ export function AssistantLayout() {
 
                 {/* Footer */}
                 <div className="p-4 border-t border-[var(--border-color)] bg-[var(--bg-main)] space-y-2">
-                    <div className="px-4 py-2 bg-indigo-500/10 rounded-lg border border-indigo-500/20 mb-2">
-                        <div className="flex items-center gap-2 text-indigo-500 mb-1">
+                    <div className="px-4 py-2 bg-[#C5A059]/10 rounded-lg border border-[#C5A059]/20 mb-2">
+                        <div className="flex items-center gap-2 text-[#C5A059] mb-1">
                             <CheckCircle className="w-4 h-4" />
                             <span className="text-xs font-bold">حساب نشط</span>
                         </div>
-                        <p className="text-[10px] text-[var(--text-secondary)] leading-tight">لديك صلاحيات: التصحيح، الأكواد، الدعم.</p>
+                        <p className="text-[10px] text-[var(--text-secondary)] leading-tight">
+                            لديك صلاحيات: {user?.permissions?.map(p => PERMISSION_LABELS[p] || p).join('، ') || 'لا توجد صلاحيات'}
+                        </p>
                     </div>
 
                     <button

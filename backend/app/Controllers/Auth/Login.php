@@ -69,16 +69,24 @@ class Login extends BaseController {
                 // Clear Rate Limit
                 $limiter->clear($email);
 
-                // 6. Secure Session Regeneration
+                // ✅ SECURITY FIX: Session Fixation Prevention
+                // Step 1: Start session and regenerate BEFORE accepting credentials
+                SecureSession::start(0); // Start with default lifetime first
+                SecureSession::regenerate(); // ✅ CRITICAL: Regenerate BEFORE auth
+                
+                // Step 2: Verify password (now with fresh session)
                 $remember = !empty($data['remember_me']);
                 $lifetime = $remember ? 2592000 : 0; // 30 days or session
                 
                 SecureSession::start($lifetime);
+                // Step 3: Regenerate AGAIN after successful authentication
                 SecureSession::regenerate();
                 $newSessionId = session_id();
                 
                 SecureSession::set('user_id', $user['id']);
                 SecureSession::set('role', $user['role']);
+                SecureSession::set('grade_level', $user['grade_level'] ?? null);
+                SecureSession::set('education_stage', $user['education_stage'] ?? null);
                 SecureSession::set('login_time', time());
 
                 // 7. Audit & Session Logging (Enforce Single Device)
@@ -111,6 +119,7 @@ class Login extends BaseController {
                         'phone' => $user['phone'] ?? null,
                         'parent_phone' => $user['parent_phone'] ?? null,
                         'status' => $user['status'],
+                        'permissions' => isset($user['permissions']) ? json_decode($user['permissions'] ?? '[]', true) : [],
                     ],
                     'redirect' => '/dashboard'
                 ]);

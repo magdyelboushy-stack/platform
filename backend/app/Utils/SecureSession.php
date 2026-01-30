@@ -45,16 +45,33 @@ class SecureSession {
      * Validate session integrity
      */
     private static function validateSession() {
-        // [NOTE] IP Check is disabled because many students use mobile data 
-        // with dynamic IPs which change frequently, causing accidental logouts.
-        /*
+// ✅ SECURITY FIX: Smart IP validation - detects changes but allows mobile users
+        // (mobile data has dynamic IPs but we track and alert on suspicious patterns)
         if (!isset($_SESSION['ip_address'])) {
             $_SESSION['ip_address'] = $_SERVER['REMOTE_ADDR'];
+            $_SESSION['ip_change_count'] = 0;
         } else if ($_SESSION['ip_address'] !== $_SERVER['REMOTE_ADDR']) {
-            self::destroy();
-            return;
+            // IP changed - increment counter
+            $_SESSION['ip_change_count'] = ($_SESSION['ip_change_count'] ?? 0) + 1;
+            
+            // Alert if many IP changes (sign of account compromise)
+            if ($_SESSION['ip_change_count'] > 3) {
+                $userId = $_SESSION['user_id'] ?? null;
+                if ($userId) {
+                    @\App\Utils\AuditLogger::log(
+                        $userId,
+                        'multiple_ip_changes',
+                        'sessions',
+                        null,
+                        null,
+                        ['ips_count' => $_SESSION['ip_change_count']]
+                    );
+                }
+            }
+            
+            // Update to current IP
+            $_SESSION['ip_address'] = $_SERVER['REMOTE_ADDR'];
         }
-        */
         
         // Check User Agent
         if (!isset($_SESSION['user_agent'])) {

@@ -22,6 +22,7 @@ import {
 import { clsx } from 'clsx';
 import { useAuthStore } from '@/store/authStore';
 import { useSidebar } from '@/store/uiStore';
+import { getImageUrl } from '@/core/utils/url';
 
 interface DashboardLayoutProps {
     children: ReactNode;
@@ -43,6 +44,8 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
     const user = useAuthStore((state) => state.user);
     const logout = useAuthStore((state) => state.logout);
     const { isOpen, isCollapsed, toggle, toggleCollapse } = useSidebar();
+
+    const avatarUrl = user?.avatar ? (user.avatar.startsWith('http') ? user.avatar : getImageUrl(`avatars/${user.avatar.split(/[\\/]/).pop()}`)) : null;
 
     return (
         <div className="min-h-screen bg-[var(--bg-main)] flex transition-colors duration-300" dir="rtl">
@@ -132,31 +135,31 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                 {/* User Profile */}
                 <div className="p-4 border-t border-[var(--border-color)]">
                     <div className={clsx('flex items-center gap-3', isCollapsed && 'justify-center')}>
-                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-violet-500 flex items-center justify-center flex-shrink-0">
-                            {user?.avatar ? (
-                                <img src={user.avatar} alt="" className="w-full h-full rounded-full object-cover" />
+                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#C5A059] to-[#8E6C3D] flex items-center justify-center flex-shrink-0 overflow-hidden border border-brand-500/20">
+                            {avatarUrl ? (
+                                <img src={avatarUrl} alt="" className="w-full h-full object-cover" />
                             ) : (
                                 <User className="w-5 h-5 text-white" />
                             )}
                         </div>
                         {!isCollapsed && (
-                            <div className="flex-1 min-w-0">
-                                <p className="font-medium text-[var(--text-primary)] truncate">{user?.name}</p>
-                                <p className="text-xs text-[var(--text-secondary)] capitalize">{user?.role}</p>
+                            <div className="flex-1 min-w-0 text-right">
+                                <p className="font-black text-[var(--text-primary)] truncate text-sm">{user?.name}</p>
+                                <p className="text-[10px] text-[var(--text-secondary)] capitalize font-bold opacity-60">{user?.role}</p>
                             </div>
                         )}
                     </div>
                     <button
                         onClick={logout}
                         className={clsx(
-                            'mt-3 w-full flex items-center justify-center gap-2 py-2 rounded-xl',
-                            'text-slate-400 hover:text-rose-400 hover:bg-rose-500/10',
-                            'transition-all duration-200',
+                            'mt-3 w-full flex items-center justify-center gap-2 py-3 rounded-xl border border-transparent font-black text-xs',
+                            'text-[var(--text-secondary)] hover:text-rose-500 hover:bg-rose-500/5 hover:border-rose-500/10',
+                            'transition-all duration-300',
                             isCollapsed && 'px-2'
                         )}
                     >
-                        <LogOut className="w-5 h-5" />
-                        {!isCollapsed && <span>Logout</span>}
+                        <LogOut className="w-4 h-4" />
+                        {!isCollapsed && <span className="mr-1">Logout</span>}
                     </button>
                 </div>
             </aside>

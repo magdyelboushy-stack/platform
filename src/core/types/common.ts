@@ -19,6 +19,7 @@ export interface User {
     governorate?: string;
     city?: string;
     createdAt?: string;
+    permissions?: string[];
 }
 
 export interface AuthTokens {
@@ -30,6 +31,7 @@ export interface AuthTokens {
 
 export interface ApiError {
     message: string;
+    error?: string; // Added to match backend responses
     errors?: Record<string, string[]>;
     code?: string;
 }

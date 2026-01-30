@@ -1,156 +1,183 @@
-
 // ============================================================
-// Assistants Manager - Add & Manage Staff
+// Teacher Assistants Manager - Premium Staff Redesign
 // ============================================================
 
-import { useState } from 'react';
-import {
-    Users, Trash2, Edit, X,
-    Mail, Lock, UserPlus
-} from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { AssistantHeader } from './components/AssistantHeader';
+import { AssistantCard } from './components/AssistantCard';
+import { AssistantFormModal } from './components/AssistantFormModal';
 import { motion, AnimatePresence } from 'framer-motion';
-
-// Assistants data - to be fetched from API
-const assistantsData: any[] = [];
+import { Search, UserMinus } from 'lucide-react';
+import { apiClient } from '@/core/api/client';
+import { ENDPOINTS } from '@/core/api/endpoints';
+import { useToast } from '@/store/uiStore';
 
 export function AssistantsManagerPage() {
-    const [isAddModalOpen, setAddModalOpen] = useState(false);
-    const [assistants] = useState<any[]>(assistantsData);
+    const [assistants, setAssistants] = useState<any[]>([]);
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [selectedAssistant, setSelectedAssistant] = useState<any>(null); // For Edit Mode
+    const [searchTerm, setSearchTerm] = useState('');
+    const [isLoading, setIsLoading] = useState(true);
+    const toast = useToast();
+
+    // Fetch Assistants
+    const fetchAssistants = async () => {
+        setIsLoading(true);
+        try {
+            const response = await apiClient.get(ENDPOINTS.ADMIN.ASSISTANTS.LIST);
+            setAssistants(response.data);
+        } catch (error) {
+            console.error('Fetch assistants error:', error);
+            toast.show({
+                type: 'error',
+                title: 'خطأ',
+                message: 'فشل جلب قائمة المساعدين'
+            });
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchAssistants();
+    }, []);
+
+    const handleOpenAddModal = () => {
+        setSelectedAssistant(null); // Clear selection for add mode
+        setIsModalOpen(true);
+    };
+
+    const handleOpenEditModal = (assistant: any) => {
+        setSelectedAssistant(assistant); // Set selection for edit mode
+        setIsModalOpen(true);
+    };
+
+    const handleFormSubmit = async (data: any) => {
+        try {
+            if (selectedAssistant) {
+                // Update Mode
+                await apiClient.post(ENDPOINTS.ADMIN.ASSISTANTS.UPDATE(selectedAssistant.id), data);
+                toast.show({
+                    type: 'success',
+                    title: 'تم التحديث',
+                    message: 'تم تحديث بيانات المساعد بنجاح'
+                });
+            } else {
+                // Create Mode
+                await apiClient.post(ENDPOINTS.ADMIN.ASSISTANTS.CREATE, data);
+                toast.show({
+                    type: 'success',
+                    title: 'تم الإضافة',
+                    message: 'تم إضافة المساعد الجديد بنجاح'
+                });
+            }
+            fetchAssistants(); // Refresh list
+        } catch (error: any) {
+            toast.show({
+                type: 'error',
+                title: 'خطأ',
+                message: error.response?.data?.error || 'حدث خطأ أثناء تنفيذ العملية'
+            });
+        }
+    };
+
+    const handleDeleteAssistant = async (id: string) => {
+        if (!confirm('هل أنت متأكد من حذف هذا المساعد؟ لا يمكن التراجع عن هذا الإجراء.')) return;
+
+        try {
+            await apiClient.post(ENDPOINTS.ADMIN.ASSISTANTS.DELETE(id));
+            toast.show({
+                type: 'success',
+                title: 'تم الحذف',
+                message: 'تم حذف حساب المساعد بنجاح'
+            });
+            setAssistants(prev => prev.filter(a => a.id !== id));
+        } catch (error: any) {
+            toast.show({
+                type: 'error',
+                title: 'خطأ',
+                message: error.response?.data?.error || 'فشل حذف المساعد'
+            });
+        }
+    };
+
+    const filteredAssistants = assistants.filter(a =>
+        a.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        a.email.toLowerCase().includes(searchTerm.toLowerCase())
+    );
 
     return (
-        <div className="space-y-8 animate-in fade-in duration-500">
-            {/* Header */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div>
-                    <h1 className="text-3xl font-black text-[var(--text-primary)] mb-2">فريق المساعدين</h1>
-                    <p className="text-[var(--text-secondary)] font-bold">إدارة المساعدين وصلاحيات الوصول للنظام.</p>
+        <div className="space-y-12 max-w-[1600px] mx-auto py-8 animate-in fade-in duration-700">
+            {/* 1. Header Section */}
+            <AssistantHeader onAdd={handleOpenAddModal} />
+
+            {/* 2. Search Toolbar */}
+            <div className="px-2">
+                <div className="relative group max-w-2xl mx-auto">
+                    <Search className="absolute right-5 top-1/2 -translate-y-1/2 w-5 h-5 text-[var(--text-secondary)] group-focus-within:text-[#C5A059] transition-colors" />
+                    <input
+                        type="text"
+                        placeholder="ابحث عن اسم مساعد أو بريد إلكتروني..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="w-full h-16 pr-14 pl-6 rounded-[1.5rem] bg-[var(--bg-card)] border border-[var(--border-color)] text-[var(--text-primary)] font-bold outline-none focus:border-[#C5A059] transition-all shadow-sm"
+                    />
                 </div>
-                <button
-                    onClick={() => setAddModalOpen(true)}
-                    className="px-6 py-3 bg-gradient-to-r from-cyan-600 to-blue-600 text-white rounded-xl font-black shadow-lg shadow-cyan-500/20 hover:shadow-xl hover:scale-105 transition-all flex items-center gap-2"
-                >
-                    <UserPlus className="w-5 h-5" />
-                    <span>إضافة مساعد جديد</span>
-                </button>
             </div>
 
-            {/* Assistants List */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {assistants.map((assistant) => (
-                    <div key={assistant.id} className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-6 relative overflow-hidden group">
-                        <div className="absolute top-0 right-0 w-24 h-24 bg-cyan-500/5 rounded-bl-full -mr-10 -mt-10 transition-transform group-hover:scale-110" />
-
-                        <div className="relative flex items-start justify-between mb-6">
-                            <div className="flex items-center gap-4">
-                                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-white shadow-lg shadow-cyan-500/20">
-                                    <span className="text-xl font-black">{assistant.name.charAt(0)}</span>
-                                </div>
-                                <div>
-                                    <h3 className="font-bold text-lg text-[var(--text-primary)]">{assistant.name}</h3>
-                                    <p className="text-xs text-[var(--text-secondary)] font-bold">{assistant.role}</p>
-                                </div>
-                            </div>
-                            <div className={`w-3 h-3 rounded-full border-2 border-[var(--bg-card)] ${assistant.status === 'active' ? 'bg-emerald-500' : 'bg-slate-400'
-                                }`} title={assistant.status === 'active' ? 'متصل' : 'غير متصل'} />
-                        </div>
-
-                        <div className="space-y-3 mb-6">
-                            <div className="flex items-center gap-2 text-sm text-[var(--text-secondary)]">
-                                <Mail className="w-4 h-4 text-cyan-500" />
-                                <span className="dir-ltr truncate">{assistant.email}</span>
-                            </div>
-                            <div className="flex flex-wrap gap-2">
-                                {assistant.permissions.map((perm, idx) => (
-                                    <span key={idx} className="px-2 py-1 rounded-lg bg-[var(--bg-main)] text-[10px] font-bold text-[var(--text-secondary)] border border-[var(--border-color)]">
-                                        {perm}
-                                    </span>
-                                ))}
-                            </div>
-                        </div>
-
-                        <div className="flex gap-3 pt-4 border-t border-[var(--border-color)]">
-                            <button className="flex-1 py-2 text-sm font-bold text-[var(--text-secondary)] hover:text-cyan-500 hover:bg-cyan-500/5 rounded-lg transition-colors flex items-center justify-center gap-2">
-                                <Edit className="w-4 h-4" />
-                                تعديل
-                            </button>
-                            <button className="flex-1 py-2 text-sm font-bold text-[var(--text-secondary)] hover:text-red-500 hover:bg-red-500/5 rounded-lg transition-colors flex items-center justify-center gap-2">
-                                <Trash2 className="w-4 h-4" />
-                                حذف
-                            </button>
-                        </div>
+            {/* 3. Assistants Grid */}
+            <div className="px-2">
+                {isLoading ? (
+                    <div className="flex items-center justify-center py-32">
+                        <div className="w-12 h-12 border-4 border-[#C5A059]/30 border-t-[#C5A059] rounded-full animate-spin" />
                     </div>
-                ))}
+                ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                        <AnimatePresence mode="popLayout">
+                            {filteredAssistants.map((assistant) => (
+                                <motion.div
+                                    layout
+                                    key={assistant.id}
+                                    initial={{ opacity: 0, scale: 0.9 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    exit={{ opacity: 0, scale: 0.9 }}
+                                >
+                                    <AssistantCard
+                                        assistant={assistant}
+                                        onEdit={() => handleOpenEditModal(assistant)} // Pass full object or ID based on your need, but Modal needs object
+                                        onDelete={handleDeleteAssistant}
+                                    />
+                                </motion.div>
+                            ))}
+                        </AnimatePresence>
+
+                        {/* Empty State */}
+                        {filteredAssistants.length === 0 && (
+                            <div className="col-span-full py-32 text-center">
+                                <div className="w-28 h-28 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-[3rem] flex items-center justify-center mx-auto mb-8 shadow-inner">
+                                    <UserMinus className="w-12 h-12 text-[var(--text-secondary)] opacity-20" />
+                                </div>
+                                <h3 className="text-2xl font-black text-[var(--text-primary)] mb-2">لا يوجد مساعدين</h3>
+                                <p className="text-[var(--text-secondary)] font-bold opacity-60 max-w-xs mx-auto leading-relaxed">
+                                    ابدأ بإضافة فريق العمل الخاص بك لغرض التعاون في إدارة المنصة.
+                                </p>
+                            </div>
+                        )}
+                    </div>
+                )}
             </div>
 
-            {/* Add Assistant Modal */}
-            <AnimatePresence>
-                {isAddModalOpen && (
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm"
-                        onClick={() => setAddModalOpen(false)}
-                    >
-                        <motion.div
-                            initial={{ scale: 0.95, opacity: 0 }}
-                            animate={{ scale: 1, opacity: 1 }}
-                            exit={{ scale: 0.95, opacity: 0 }}
-                            onClick={(e) => e.stopPropagation()}
-                            className="bg-[var(--bg-card)] border border-[var(--border-color)] w-full max-w-lg rounded-2xl overflow-hidden shadow-2xl"
-                        >
-                            <div className="p-6 border-b border-[var(--border-color)] flex justify-between items-center bg-[var(--bg-main)]">
-                                <h2 className="text-xl font-black text-[var(--text-primary)]">إضافة مساعد جديد</h2>
-                                <button onClick={() => setAddModalOpen(false)} className="p-2 hover:bg-[var(--bg-card)] rounded-xl text-[var(--text-secondary)]">
-                                    <X className="w-5 h-5" />
-                                </button>
-                            </div>
+            {/* 4. Add/Edit Modal */}
+            <AssistantFormModal
+                isOpen={isModalOpen}
+                onClose={() => setIsModalOpen(false)}
+                onSubmit={handleFormSubmit}
+                initialData={selectedAssistant}
+            />
 
-                            <form className="p-6 space-y-4">
-                                <div className="space-y-2">
-                                    <label className="text-sm font-bold text-[var(--text-secondary)]">الاسم بالكامل</label>
-                                    <div className="relative">
-                                        <input type="text" placeholder="اسم المساعد" className="w-full px-4 py-3 rounded-xl bg-[var(--bg-main)] border border-[var(--border-color)] focus:border-cyan-500 outline-none font-bold text-[var(--text-primary)] pr-10" />
-                                        <Users className="absolute right-3 top-3.5 w-5 h-5 text-[var(--text-secondary)]" />
-                                    </div>
-                                </div>
-
-                                <div className="space-y-2">
-                                    <label className="text-sm font-bold text-[var(--text-secondary)]">البريد الإلكتروني</label>
-                                    <div className="relative">
-                                        <input type="email" placeholder="example@system.com" className="w-full px-4 py-3 rounded-xl bg-[var(--bg-main)] border border-[var(--border-color)] focus:border-cyan-500 outline-none font-bold text-[var(--text-primary)] pr-10 dir-ltr" />
-                                        <Mail className="absolute right-3 top-3.5 w-5 h-5 text-[var(--text-secondary)]" />
-                                    </div>
-                                </div>
-
-                                <div className="space-y-2">
-                                    <label className="text-sm font-bold text-[var(--text-secondary)]">كلمة المرور</label>
-                                    <div className="relative">
-                                        <input type="password" placeholder="••••••••" className="w-full px-4 py-3 rounded-xl bg-[var(--bg-main)] border border-[var(--border-color)] focus:border-cyan-500 outline-none font-bold text-[var(--text-primary)] pr-10 dir-ltr" />
-                                        <Lock className="absolute right-3 top-3.5 w-5 h-5 text-[var(--text-secondary)]" />
-                                    </div>
-                                </div>
-
-                                <div className="space-y-2">
-                                    <label className="text-sm font-bold text-[var(--text-secondary)]">الصلاحيات</label>
-                                    <div className="flex flex-wrap gap-2">
-                                        {['الطلاب', 'الواجبات', 'الامتحانات', 'طلبات الدخول', 'الكودات', 'الدعم الفني'].map((perm) => (
-                                            <label key={perm} className="flex items-center gap-2 px-3 py-2 rounded-lg border border-[var(--border-color)] cursor-pointer hover:bg-[var(--bg-main)]">
-                                                <input type="checkbox" className="w-4 h-4 rounded text-cyan-600 focus:ring-cyan-500" />
-                                                <span className="text-xs font-bold text-[var(--text-primary)]">{perm}</span>
-                                            </label>
-                                        ))}
-                                    </div>
-                                </div>
-
-                                <button type="button" className="w-full py-4 bg-cyan-600 hover:bg-cyan-500 text-white rounded-xl font-black shadow-lg shadow-cyan-500/20 mt-4 transition-all">
-                                    إنشاء الحساب
-                                </button>
-                            </form>
-                        </motion.div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
+            {/* Aesthetics Decor */}
+            <div className="fixed top-[-10%] right-[-10%] w-[600px] h-[600px] bg-[#C5A059]/5 rounded-full blur-[150px] -z-10 pointer-events-none" />
+            <div className="fixed bottom-[-10%] left-[-10%] w-[500px] h-[500px] bg-cyan-500/5 rounded-full blur-[120px] -z-10 pointer-events-none" />
         </div>
     );
 }

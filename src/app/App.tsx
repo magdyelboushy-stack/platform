@@ -7,6 +7,7 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuthStore } from '@/store/authStore';
 import { useUIStore } from '@/store/uiStore';
 import { Toasts } from '@/core/components/Toasts';
+import type { UserRole } from '@/core/types/common';
 
 import { TeacherLayout } from '@/features/teacher/layouts/TeacherLayout';
 
@@ -15,11 +16,11 @@ const HomePage = lazy(() => import('@/features/home/HomePage').then(m => ({ defa
 const LoginPage = lazy(() => import('@/features/auth/components/LoginForm').then(m => ({ default: m.LoginForm })));
 const RegisterPage = lazy(() => import('@/features/auth/components/RegisterForm').then(m => ({ default: m.RegisterForm })));
 const StaffLoginPage = lazy(() => import('@/features/auth/components/StaffLoginPage').then(m => ({ default: m.StaffLoginPage })));
+const InitTeacherAccountPage = lazy(() => import('@/features/auth/components/InitTeacherAccountPage').then(m => ({ default: m.InitTeacherAccountPage })));
 const TeacherDashboardPage = lazy(() => import('@/features/teacher/pages/TeacherDashboard').then(m => ({ default: m.TeacherDashboard })));
 const TeacherCoursesPage = lazy(() => import('@/features/teacher/courses/CoursesListPage').then(m => ({ default: m.CoursesListPage })));
 const CreateCoursePage = lazy(() => import('@/features/teacher/courses/CreateCoursePage').then(m => ({ default: m.CreateCoursePage })));
 const EditCoursePage = lazy(() => import('@/features/teacher/courses/EditCoursePage').then(m => ({ default: m.EditCoursePage })));
-const ExamsListPage = lazy(() => import('@/features/teacher/exams/ExamsListPage').then(m => ({ default: m.ExamsListPage })));
 const ExamEditorPage = lazy(() => import('@/features/teacher/exams/ExamEditorPage').then(m => ({ default: m.ExamEditorPage })));
 const FilesManagerPage = lazy(() => import('@/features/teacher/files/FilesManagerPage').then(m => ({ default: m.FilesManagerPage })));
 const CodesManagerPage = lazy(() => import('@/features/teacher/codes/CodesManagerPage').then(m => ({ default: m.CodesManagerPage })));
@@ -29,6 +30,7 @@ const HomeworkManagerPage = lazy(() => import('@/features/teacher/homework/Homew
 const AssistantsManagerPage = lazy(() => import('@/features/teacher/assistants/AssistantsManagerPage').then(m => ({ default: m.AssistantsManagerPage })));
 const TeacherSettingsPage = lazy(() => import('@/features/teacher/settings/TeacherSettingsPage').then(m => ({ default: m.TeacherSettingsPage })));
 const TeacherWalletPage = lazy(() => import('@/features/teacher/wallet/TeacherWalletPage').then(m => ({ default: m.TeacherWalletPage })));
+const QuestionBankPage = lazy(() => import('@/features/teacher/questions/QuestionBankPage').then(m => ({ default: m.QuestionBankPage })));
 const TeacherSupportPage = lazy(() => import('@/features/teacher/support/TeacherSupportPage').then(m => ({ default: m.TeacherSupportPage })));
 const TeachersPage = lazy(() => import('@/features/teachers/TeachersPage').then(m => ({ default: m.TeachersPage })));
 const AboutPage = lazy(() => import('@/features/about/AboutPage').then(m => ({ default: m.AboutPage })));
@@ -53,6 +55,7 @@ const SupportSection = lazy(() => import('@/features/dashboard/sections/SupportS
 
 // Assistant Pages
 import { AssistantLayout } from '@/features/assistant/layouts/AssistantLayout';
+import { PermissionGuard } from '@/core/components/PermissionGuard';
 const AssistantDashboardPage = lazy(() => import('@/features/assistant/pages/AssistantDashboard').then(m => ({ default: m.AssistantDashboardPage })));
 
 // Profile Section (Needs to be extracted to a separate file, but for now we'll keep using the one inside StudentDashboardPage.
@@ -69,39 +72,76 @@ const ProfileSection = lazy(() => import('@/features/dashboard/sections/ProfileS
 function LoadingScreen() {
     return (
         <div className="min-h-screen bg-[var(--bg-main)] flex items-center justify-center">
-            <div className="w-12 h-12 border-4 border-cyan-500/30 border-t-cyan-500 rounded-full animate-spin" />
+            <div className="w-12 h-12 border-4 rounded-full border-cyan-500/30 border-t-cyan-500 animate-spin" />
         </div>
     );
 }
 
-// Protected Route Wrapper
-function ProtectedRoute({ children }: { children: React.ReactNode }) {
-    const { isAuthenticated, user, logout } = useAuthStore();
+// Protected Route Wrapper - For logged-in users only
+function ProtectedRoute({ children, allowedRoles }: { children: React.ReactNode, allowedRoles?: UserRole[] }) {
+    const { isAuthenticated, user, logout, hasRole } = useAuthStore();
     const { showToast } = useUIStore();
+
+    useEffect(() => {
+        if (!isAuthenticated) return;
+
+        // Role check side-effect
+        if (isAuthenticated && allowedRoles && !hasRole(allowedRoles)) {
+            showToast({
+                type: 'error',
+                title: 'غير مصرح',
+                message: 'ليس لديك الصلاحيات الكافية للوصول إلى هذه الصفحة.',
+            });
+        }
+
+        // Account status side-effects
+        if (user?.status === 'pending') {
+            logout();
+            showToast({
+                type: 'warning',
+                title: 'حسابك قيد المراجعة',
+                message: 'سيتم تفعيل حسابك فور مراجعة البيانات من قبل الإدارة.',
+            });
+        } else if (user?.status === 'blocked') {
+            logout();
+            showToast({
+                type: 'error',
+                title: 'حساب محظور',
+                message: 'تم تعطيل حسابك. يرجى التواصل مع الدعم الفني للاستفسار.',
+            });
+        }
+    }, [isAuthenticated, user, allowedRoles, hasRole, logout, showToast]);
 
     if (!isAuthenticated) {
         return <Navigate to="/login" replace />;
     }
 
-    // Handle account status
-    if (user?.status === 'pending') {
-        logout();
-        showToast({
-            type: 'warning',
-            title: 'حسابك قيد المراجعة',
-            message: 'سيتم تفعيل حسابك فور مراجعة البيانات من قبل الإدارة.',
-        });
+    // Role check redirect (render logic only)
+    if (allowedRoles && !hasRole(allowedRoles)) {
+        // Redirect based on current role if possible
+        if (user?.role === 'student') return <Navigate to="/dashboard" replace />;
+        if (user?.role === 'assistant') return <Navigate to="/assistant/dashboard" replace />;
+        if (user?.role === 'teacher') return <Navigate to="/teacher/dashboard" replace />;
+
+        return <Navigate to="/" replace />;
+    }
+
+    // Handle account status redirect (render logic only)
+    if (user?.status === 'pending' || user?.status === 'blocked') {
         return <Navigate to="/login" replace />;
     }
 
-    if (user?.status === 'blocked') {
-        logout();
-        showToast({
-            type: 'error',
-            title: 'حساب محظور',
-            message: 'تم تعطيل حسابك. يرجى التواصل مع الدعم الفني للاستفسار.',
-        });
-        return <Navigate to="/login" replace />;
+    return <>{children}</>;
+}
+
+// Public Route Wrapper - Only for non-authenticated users (login/register)
+function PublicRoute({ children }: { children: React.ReactNode }) {
+    const { isAuthenticated, user } = useAuthStore();
+
+    if (isAuthenticated) {
+        if (user?.role === 'teacher' || user?.role === 'admin') return <Navigate to="/teacher/dashboard" replace />;
+        if (user?.role === 'assistant') return <Navigate to="/assistant/dashboard" replace />;
+        return <Navigate to="/dashboard" replace />;
     }
 
     return <>{children}</>;
@@ -125,6 +165,34 @@ export default function App() {
         if (isAuthenticated) fetchUser();
     }, [isAuthenticated, fetchUser]);
 
+    // Content Protection: Enhanced Anti-Inspect
+    useEffect(() => {
+        const handleContextMenu = (e: MouseEvent) => {
+            e.preventDefault();
+            e.stopPropagation();
+        };
+
+        const handleKeyDown = (e: KeyboardEvent) => {
+            const isForbidden =
+                e.key === 'F12' ||
+                (e.ctrlKey && e.shiftKey && ['I', 'J', 'C'].includes(e.key.toUpperCase())) ||
+                (e.ctrlKey && e.key.toUpperCase() === 'U');
+
+            if (isForbidden) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+        };
+
+        window.addEventListener('contextmenu', handleContextMenu, { capture: true });
+        window.addEventListener('keydown', handleKeyDown, { capture: true });
+
+        return () => {
+            window.removeEventListener('contextmenu', handleContextMenu, { capture: true });
+            window.removeEventListener('keydown', handleKeyDown, { capture: true });
+        };
+    }, []);
+
     return (
         <div className={theme}>
             <Toasts />
@@ -133,19 +201,28 @@ export default function App() {
                     <Routes>
                         {/* Public Routes */}
                         <Route path="/" element={<HomePage />} />
-                        <Route path="/login" element={<LoginPage />} />
-                        <Route path="/register" element={<RegisterPage />} />
-                        <Route path="/teacher/login" element={<StaffLoginPage />} />
-                        <Route path="/admin/login" element={<StaffLoginPage />} />
-                        <Route path="/assistant/login" element={<StaffLoginPage />} />
+                        <Route path="/login" element={<PublicRoute><LoginPage /></PublicRoute>} />
+                        <Route path="/register" element={<PublicRoute><RegisterPage /></PublicRoute>} />
+                        <Route path="/teacher/login" element={<PublicRoute><StaffLoginPage /></PublicRoute>} />
+                        {/* One-time teacher account initializer (open manually then remove or ignore) */}
+                        <Route path="/init-teacher" element={<InitTeacherAccountPage />} />
+                        <Route path="/admin/login" element={<PublicRoute><StaffLoginPage /></PublicRoute>} />
+                        <Route path="/assistant/login" element={<PublicRoute><StaffLoginPage /></PublicRoute>} />
 
                         {/* Teacher Dashboard Routes */}
-                        <Route path="/teacher" element={<TeacherLayout />}>
+                        <Route
+                            path="/teacher"
+                            element={
+                                <ProtectedRoute allowedRoles={['teacher', 'admin']}>
+                                    <TeacherLayout />
+                                </ProtectedRoute>
+                            }
+                        >
                             <Route path="dashboard" element={<TeacherDashboardPage />} />
                             <Route path="courses" element={<TeacherCoursesPage />} />
                             <Route path="courses/new" element={<CreateCoursePage />} />
                             <Route path="courses/:id" element={<EditCoursePage />} />
-                            <Route path="exams" element={<ExamsListPage />} />
+                            <Route path="exams" element={<QuestionBankPage />} />
                             <Route path="exams/new" element={<ExamEditorPage />} />
                             <Route path="exams/:id" element={<ExamEditorPage />} />
                             <Route path="files" element={<FilesManagerPage />} />
@@ -171,7 +248,7 @@ export default function App() {
                         <Route
                             path="/dashboard"
                             element={
-                                <ProtectedRoute>
+                                <ProtectedRoute allowedRoles={['student', 'parent', 'teacher', 'admin']}>
                                     <StudentDashboardPage />
                                 </ProtectedRoute>
                             }
@@ -191,13 +268,69 @@ export default function App() {
                         </Route>
 
                         {/* Assistant Dashboard Routes */}
-                        <Route path="/assistant" element={<AssistantLayout />}>
+                        <Route
+                            path="/assistant"
+                            element={
+                                <ProtectedRoute allowedRoles={['assistant', 'teacher', 'admin']}>
+                                    <AssistantLayout />
+                                </ProtectedRoute>
+                            }
+                        >
                             <Route path="dashboard" element={<AssistantDashboardPage />} />
-                            {/* Reusing existing components for now since logic is similar, or add dedicated wrappers later */}
-                            <Route path="grading" element={<HomeworkManagerPage />} />
-                            <Route path="codes" element={<CodesManagerPage />} />
-                            <Route path="requests" element={<RequestsManagerPage />} />
-                            <Route path="support" element={<TeacherSupportPage />} />
+
+                            <Route path="students" element={
+                                <PermissionGuard permission="students">
+                                    <StudentsManagerPage />
+                                </PermissionGuard>
+                            } />
+
+                            <Route path="grading" element={
+                                <PermissionGuard permission="homework">
+                                    <HomeworkManagerPage />
+                                </PermissionGuard>
+                            } />
+
+                            <Route path="exams" element={
+                                <PermissionGuard permission="exams">
+                                    <QuestionBankPage />
+                                </PermissionGuard>
+                            } />
+
+                            <Route path="requests" element={
+                                <PermissionGuard permission="requests">
+                                    <RequestsManagerPage />
+                                </PermissionGuard>
+                            } />
+
+                            <Route path="codes" element={
+                                <PermissionGuard permission="codes">
+                                    <CodesManagerPage />
+                                </PermissionGuard>
+                            } />
+
+                            <Route path="support" element={
+                                <PermissionGuard permission="support">
+                                    <TeacherSupportPage />
+                                </PermissionGuard>
+                            } />
+
+                            <Route path="courses">
+                                <Route index element={
+                                    <PermissionGuard permission="courses">
+                                        <TeacherCoursesPage />
+                                    </PermissionGuard>
+                                } />
+                                <Route path="new" element={
+                                    <PermissionGuard permission="courses">
+                                        <CreateCoursePage />
+                                    </PermissionGuard>
+                                } />
+                                <Route path=":id" element={
+                                    <PermissionGuard permission="courses">
+                                        <EditCoursePage />
+                                    </PermissionGuard>
+                                } />
+                            </Route>
                         </Route>
 
                         {/* Fallback */}

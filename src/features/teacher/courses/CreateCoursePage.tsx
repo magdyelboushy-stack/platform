@@ -1,128 +1,135 @@
-// ============================================================
-// Create New Course Page
-// ============================================================
-
 import { useState } from 'react';
-import { ArrowRight, Image as ImageIcon, Save } from 'lucide-react';
+import { ArrowRight, Save, Wand2, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import { useAuthStore } from '@/store/authStore';
+import { apiClient } from '@/core/api/client';
+import { ENDPOINTS } from '@/core/api/endpoints';
+import { useToast } from '@/store/uiStore';
+
+// Components
+import { CourseFormFields } from '../components/courses/CourseFormFields';
+
+interface CourseFormData {
+    title: string;
+    description: string;
+    price: number;
+    education_stage: 'primary' | 'prep' | 'secondary';
+    grade_level: string;
+}
 
 export function CreateCoursePage() {
     const navigate = useNavigate();
+    const { user } = useAuthStore();
+    const toast = useToast();
     const [isLoading, setIsLoading] = useState(false);
+    const [formData, setFormData] = useState<CourseFormData>({
+        title: '',
+        description: '',
+        price: 0,
+        education_stage: 'secondary',
+        grade_level: 'third_secondary',
+    });
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const basePath = user?.role === 'assistant' ? '/assistant' : '/teacher';
+
+    const handleChange = (field: keyof CourseFormData, value: string | number) => {
+        setFormData(prev => ({ ...prev, [field]: value }));
+    };
+
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        if (!formData.title.trim()) {
+            toast.show({ type: 'error', title: 'خطأ', message: 'عنوان الكورس مطلوب' });
+            return;
+        }
+
         setIsLoading(true);
-        // Simulate API call
-        setTimeout(() => {
+
+        try {
+            const response = await apiClient.post(ENDPOINTS.ADMIN.COURSES.CREATE, formData);
+            const courseId = response.data.id;
+
+            toast.show({
+                type: 'success',
+                title: 'تم بنجاح',
+                message: 'تم إنشاء الكورس، يمكنك الآن إضافة المحتوى'
+            });
+
+            navigate(`${basePath}/courses/${courseId}`);
+        } catch (error: any) {
+            toast.show({
+                type: 'error',
+                title: 'خطأ',
+                message: error.response?.data?.error || 'فشل إنشاء الكورس'
+            });
+        } finally {
             setIsLoading(false);
-            navigate('/teacher/courses/draft-123'); // Go to editor
-        }, 1500);
+        }
     };
 
     return (
-        <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in duration-500">
-            {/* Header */}
-            <div className="flex items-center gap-4">
-                <button
-                    onClick={() => navigate('/teacher/courses')}
-                    className="w-10 h-10 rounded-xl bg-[var(--bg-card)] border border-[var(--border-color)] flex items-center justify-center text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
-                >
-                    <ArrowRight className="w-5 h-5" />
-                </button>
-                <div>
-                    <h1 className="text-3xl font-black text-[var(--text-primary)]">إنشاء كورس جديد</h1>
-                    <p className="text-[var(--text-secondary)] font-medium">ابدأ رحلة تعليمية جديدة بملء البيانات الأساسية للكورس.</p>
+        <div className="max-w-5xl mx-auto space-y-8 md:space-y-12 pb-20 px-4 md:px-0">
+            {/* Page Header */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 animate-in fade-in slide-in-from-top-4 duration-700">
+                <div className="flex items-center gap-4 md:gap-6">
+                    <button
+                        onClick={() => navigate(`${basePath}/courses`)}
+                        className="w-12 h-12 md:w-14 md:h-14 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)] flex items-center justify-center text-[var(--text-secondary)] hover:text-brand-500 hover:border-brand-500/30 transition-all shadow-sm active:scale-90"
+                    >
+                        <ArrowRight className="w-5 h-5 md:w-6 md:h-6" />
+                    </button>
+                    <div>
+                        <h1 className="text-2xl md:text-4xl font-black text-[var(--text-primary)] mb-1 md:mb-2 font-display">بناء كورس جديد</h1>
+                        <p className="text-xs md:text-base text-[var(--text-secondary)] font-bold opacity-60">ابدأ بتحديد الأساسيات، ويمكنك دائماً العودة للتعديل لاحقاً.</p>
+                    </div>
+                </div>
+                <div className="flex items-center gap-3">
+                    <button className="flex-1 md:flex-initial flex items-center justify-center gap-2 px-6 py-3 bg-[var(--bg-card)] border border-[var(--border-color)] text-[var(--text-primary)] rounded-2xl font-black text-sm hover:border-brand-500/30 transition-all shadow-sm active:scale-95">
+                        <Wand2 className="w-4 h-4 text-brand-500" />
+                        <span>الذكاء الاصطناعي</span>
+                    </button>
                 </div>
             </div>
 
-            {/* Form */}
-            <form onSubmit={handleSubmit} className="space-y-8">
-                {/* Basic Info Card */}
-                <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-8 space-y-6">
-                    <div>
-                        <label className="block text-sm font-bold text-[var(--text-primary)] mb-2">عنوان الكورس</label>
-                        <input
-                            type="text"
-                            placeholder="مثال: شرح النحو الشامل للصف الثالث الثانوي"
-                            className="w-full px-4 py-3 bg-[var(--bg-main)] border border-[var(--border-color)] rounded-xl text-[var(--text-primary)] focus:border-cyan-500 outline-none transition-colors"
-                            required
-                        />
-                    </div>
+            {/* Main Form Content */}
+            <form onSubmit={handleSubmit} className="space-y-8 md:space-y-12">
+                {/* Form Fields Component */}
+                <CourseFormFields formData={formData} onChange={handleChange} />
 
-                    <div>
-                        <label className="block text-sm font-bold text-[var(--text-primary)] mb-2">وصف قصير</label>
-                        <textarea
-                            rows={4}
-                            placeholder="اكتب وصفاً مختصراً عما سيتعلمه الطلاب في هذا الكورس..."
-                            className="w-full px-4 py-3 bg-[var(--bg-main)] border border-[var(--border-color)] rounded-xl text-[var(--text-primary)] focus:border-cyan-500 outline-none transition-colors resize-none"
-                            required
-                        />
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div>
-                            <label className="block text-sm font-bold text-[var(--text-primary)] mb-2">السعر (ج.م)</label>
-                            <input
-                                type="number"
-                                min="0"
-                                placeholder="0"
-                                className="w-full px-4 py-3 bg-[var(--bg-main)] border border-[var(--border-color)] rounded-xl text-[var(--text-primary)] focus:border-cyan-500 outline-none transition-colors"
-                                required
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-bold text-[var(--text-primary)] mb-2">المادة الدراسية</label>
-                            <select className="w-full px-4 py-3 bg-[var(--bg-main)] border border-[var(--border-color)] rounded-xl text-[var(--text-primary)] focus:border-cyan-500 outline-none transition-colors">
-                                <option>اللغة العربية</option>
-                                <option>التاريخ</option>
-                                <option>الجغرافيا</option>
-                            </select>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Thumbnail Upload */}
-                <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-8">
-                    <label className="block text-sm font-bold text-[var(--text-primary)] mb-4">صورة الغلاف</label>
-                    <div className="border-2 border-dashed border-[var(--border-color)] rounded-2xl p-10 flex flex-col items-center justify-center gap-4 hover:border-cyan-500 transition-colors cursor-pointer group bg-[var(--bg-main)]">
-                        <div className="w-16 h-16 rounded-full bg-[var(--bg-card)] flex items-center justify-center text-[var(--text-secondary)] group-hover:text-cyan-500 transition-colors shadow-sm">
-                            <ImageIcon className="w-8 h-8" />
-                        </div>
-                        <div className="text-center">
-                            <p className="font-bold text-[var(--text-primary)]">اضغط لرفع صورة</p>
-                            <p className="text-xs text-[var(--text-secondary)] mt-1">PNG, JPG حتى 5 ميجابايت (1920x1080 مستحسن)</p>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Footer Actions */}
-                <div className="flex items-center justify-end gap-4 pt-4 border-t border-[var(--border-color)]">
+                {/* Sticky Mobile/Bottom Footer */}
+                <motion.div
+                    initial={{ opacity: 0, y: 50 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.5 }}
+                    className="flex items-center justify-end gap-4 pt-10 border-t border-[var(--border-color)]"
+                >
                     <button
                         type="button"
-                        onClick={() => navigate('/teacher/courses')}
-                        className="px-6 py-3 bg-[var(--bg-card)] hover:bg-[var(--bg-main)] text-[var(--text-primary)] rounded-xl font-bold border border-[var(--border-color)] transition-colors"
+                        onClick={() => navigate(`${basePath}/courses`)}
+                        className="px-8 py-4 bg-[var(--bg-card)] hover:bg-[var(--bg-main)] text-[var(--text-primary)] rounded-2xl font-black border border-[var(--border-color)] transition-all active:scale-95"
                     >
                         إلغاء
                     </button>
                     <button
                         type="submit"
                         disabled={isLoading}
-                        className="flex items-center gap-2 px-8 py-3 bg-cyan-600 hover:bg-cyan-500 text-white rounded-xl font-bold shadow-lg shadow-cyan-500/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="flex items-center gap-3 px-10 py-4 bg-brand-500 hover:bg-brand-600 text-white rounded-2xl font-black shadow-xl shadow-brand-500/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed active:scale-95"
                     >
                         {isLoading ? (
                             <>
-                                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                                <span>جاري الإنشاء...</span>
+                                <Loader2 className="w-5 h-5 animate-spin" />
+                                <span className="uppercase tracking-widest text-xs">جاري الحفظ...</span>
                             </>
                         ) : (
                             <>
                                 <Save className="w-5 h-5" />
-                                <span>حفظ ومتابعة للمحتوى</span>
+                                <span>حفظ وبدء بناء المنهج</span>
                             </>
                         )}
                     </button>
-                </div>
+                </motion.div>
             </form>
         </div>
     );

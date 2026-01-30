@@ -14,19 +14,24 @@ import { CoursesFilters } from './components/CoursesFilters';
 import { CoursesGrid } from './components/CoursesGrid';
 
 // Level Mapping for Smart Logic (Expanding to Prep)
+// Comprehensive Level Mapping for Data Normalization
 const LEVEL_MAP: Record<string, string> = {
-    "1": "الصف الأول الثانوي",
-    "2": "الصف الثاني الثانوي",
-    "3": "الصف الثالث الثانوي",
-    "7": "الصف الأول الإعدادي",
-    "8": "الصف الثاني الإعدادي",
-    "9": "الصف الثالث الإعدادي",
-    "الصف الأول الإعدادي": "الصف الأول الإعدادي",
-    "الصف الثاني الإعدادي": "الصف الثاني الإعدادي",
-    "الصف الثالث الإعدادي": "الصف الثالث الإعدادي",
-    "الصف الأول الثانوي": "الصف الأول الثانوي",
-    "الصف الثاني الثانوي": "الصف الثاني الثانوي",
-    "الصف الثالث الثانوي": "الصف الثالث الثانوي"
+    // Primary
+    "4": "الصف الرابع", "primary_4": "الصف الرابع", "الصف الرابع": "الصف الرابع",
+    "5": "الصف الخامس", "primary_5": "الصف الخامس", "الصف الخامس": "الصف الخامس",
+    "6": "الصف السادس", "primary_6": "الصف السادس", "الصف السادس": "الصف السادس",
+
+    // Prep (الإعدادي)
+    "7": "الصف الأول الإعدادي", "first_prep": "الصف الأول الإعدادي", "الصف الأول الإعدادي": "الصف الأول الإعدادي",
+    "8": "الصف الثاني الإعدادي", "second_prep": "الصف الثاني الإعدادي", "الصف الثاني الإعدادي": "الصف الثاني الإعدادي",
+    "9": "الصف الثالث الإعدادي", "third_prep": "الصف الثالث الإعدادي", "الصف الثالث الإعدادي": "الصف الثالث الإعدادي",
+    "prep": "المرحلة الإعدادية",
+
+    // Secondary (الثانوي)
+    "10": "الصف الأول الثانوي", "first_sec": "الصف الأول الثانوي", "الصف الأول الثانوي": "الصف الأول الثانوي",
+    "11": "الصف الثاني الثانوي", "second_sec": "الصف الثاني الثانوي", "الصف الثاني الثانوي": "الصف الثاني الثانوي",
+    "12": "الصف الثالث الثانوي", "third_sec": "الصف الثالث الثانوي", "الصف الثالث الثانوي": "الصف الثالث الثانوي",
+    "secondary": "المرحلة الثانوية"
 };
 
 import { useEffect } from 'react';
@@ -42,23 +47,32 @@ export function CoursesPage() {
     const [searchQuery, setSearchQuery] = useState("");
     const [selectedSubject, setSelectedSubject] = useState("الكل");
 
+    const fetchCourses = async () => {
+        setLoading(true);
+        try {
+            const response = await api.get<any[]>(ENDPOINTS.COURSES.LIST);
+            setCourses(Array.isArray(response) ? response : []);
+        } catch (error) {
+            console.error("Failed to fetch real courses:", error);
+            setCourses([]);
+        } finally {
+            setLoading(false);
+        }
+    };
+
     // Fetch Real Data from API
     useEffect(() => {
-        const fetchCourses = async () => {
-            setLoading(true);
-            try {
-                // Fetch all courses - standard endpoint
-                const response = await api.get<any[]>(ENDPOINTS.COURSES.LIST);
-                setCourses(Array.isArray(response) ? response : []);
-            } catch (error) {
-                console.error("Failed to fetch real courses:", error);
-                setCourses([]);
-            } finally {
-                setLoading(false);
-            }
-        };
         fetchCourses();
     }, []);
+
+    const handleEnroll = async (courseId: string) => {
+        try {
+            await api.post(ENDPOINTS.COURSES.ENROLL(courseId));
+            fetchCourses();
+        } catch (error) {
+            console.error("Enrollment failed:", error);
+        }
+    };
 
     // Smart Logic: Pre-lock level if user is logged in
     const defaultLevel = useMemo(() => {
@@ -76,16 +90,27 @@ export function CoursesPage() {
         return courses.filter(course => {
             const matchesSubject = selectedSubject === "الكل" || course.subject === selectedSubject;
 
+            // Normalize levels for robust comparison
+            const courseLevelNormalized = LEVEL_MAP[course.gradeLevel] || course.gradeLevel;
+            const selectedLevelNormalized = LEVEL_MAP[selectedLevel] || selectedLevel;
+            const userLevelNormalized = user?.grade_level ? (LEVEL_MAP[user.grade_level] || user.grade_level) : null;
+
             // SECURITY GATE: Logged-in students CANNOT see other levels
-            const matchesLevel = isAuthenticated
-                ? course.level === defaultLevel // Locked to registered grade
-                : (selectedLevel === "جميع الصفوف" || course.level === selectedLevel);
+            let matchesLevel = true;
+            if (isAuthenticated && user?.education_stage) {
+                // Lock strictly to student's stage and grade (Normalized)
+                matchesLevel = course.educationStage === user.education_stage &&
+                    courseLevelNormalized === userLevelNormalized;
+            } else {
+                // Public view or filter
+                matchesLevel = (selectedLevel === "جميع الصفوف" || courseLevelNormalized === selectedLevelNormalized);
+            }
 
             const matchesSearch = course.title?.toLowerCase().includes(searchQuery.toLowerCase());
 
             return matchesSubject && matchesLevel && matchesSearch;
         });
-    }, [selectedSubject, selectedLevel, searchQuery, isAuthenticated, defaultLevel, courses]);
+    }, [selectedSubject, selectedLevel, searchQuery, isAuthenticated, user, courses]);
 
     return (
         <div className="min-h-screen bg-[var(--bg-main)] transition-colors duration-500" dir="rtl">
@@ -112,7 +137,11 @@ export function CoursesPage() {
                         جارٍ تحميل الكورسات...
                     </div>
                 ) : (
-                    <CoursesGrid courses={filteredCourses} levelName={defaultLevel} />
+                    <CoursesGrid
+                        courses={filteredCourses}
+                        levelName={selectedLevel}
+                        onEnroll={handleEnroll}
+                    />
                 )}
             </main>
 
